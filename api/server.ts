@@ -3,6 +3,7 @@ import http from "http";
 import path from "path";
 import { Server } from "socket.io";
 import cors from "cors";
+import fs from "fs";
 import { getStartggApiKey, saveConfig } from "./services/config";
 import { isMatchNotNull } from "./core/types";
 import { assignStreamToSet } from "./services/assignStream";
@@ -21,6 +22,17 @@ import { finalSubmitResultToStartGG } from "./services/submitResult";
 let streams: TournamentStream[] = [];
 
 const app = express();
+
+const logPath = path.join(
+  (process as any).pkg ? path.dirname(process.execPath) : process.cwd(),
+  "app.log",
+);
+
+function log(message: string) {
+  const line = `[${new Date().toISOString()}] ${message}\n`;
+  fs.appendFileSync(logPath, line);
+  log(message);
+}
 
 app.use(
   cors({
@@ -62,7 +74,7 @@ app.post("/config", async (req, res) => {
       ...result,
     });
   } catch (err: any) {
-    console.error("Config saved, but refresh failed:", err.response ?? err);
+    log(`Config saved, but refresh failed: ${err.response ?? err}`);
 
     return res.status(500).json({
       ok: false,
@@ -116,7 +128,7 @@ function openBrowser(url: string) {
 
 async function bootstrap() {
   if (!getStartggApiKey()) {
-    console.log("No Start.gg token configured yet. Skipping initial refresh.");
+    log("No Start.gg token configured yet. Skipping initial refresh.");
     return;
   }
 
@@ -133,8 +145,8 @@ async function refreshFromStartGG() {
 
   streams = freshStreams;
   store.mergeFromStartGG(matches);
-  console.log(`Refreshed ${matches.length} matches`);
-  console.log(`Refreshed ${freshStreams.length} streams`);
+  log(`Refreshed ${matches.length} matches`);
+  log(`Refreshed ${freshStreams.length} streams`);
 
   return {
     matches: matches.length,
@@ -175,7 +187,7 @@ app.post("/assign", async (req, res) => {
     });
   }
 
-  console.log(match.status);
+  log(match.status);
 
   if (match.status === "complete") {
     return res.status(409).json({
@@ -198,7 +210,7 @@ app.post("/assign", async (req, res) => {
 
     return res.json(updatedMatch);
   } catch (err) {
-    console.error("Failed to assign stream on start.gg:", err);
+    log(`Failed to assign stream on start.gg: ${err}`);
 
     return res.status(502).json({
       error: "Failed to assign stream on start.gg",
@@ -233,10 +245,7 @@ app.post("/unassign", async (req, res) => {
 
     return res.json(updatedMatch);
   } catch (err: any) {
-    console.error(
-      "Failed to unassign stream on start.gg:",
-      err.response ?? err,
-    );
+    log(`Failed to unassign stream on start.gg:" ${err.response ?? err}`);
 
     return res.status(502).json({
       error: "Failed to unassign stream on start.gg",
@@ -275,7 +284,7 @@ app.post("/start", async (req, res) => {
 
     return res.json(updatedMatch);
   } catch (err: any) {
-    console.error("Failed to start match on start.gg:", err.response ?? err);
+    log(`Failed to start match on start.gg: ${err.response ?? err}`);
 
     return res.status(502).json({
       error: "Failed to start match on start.gg",
@@ -338,7 +347,7 @@ app.post("/saveResult", async (req, res) => {
 
     return res.json(store.getState()[matchId]);
   } catch (err: any) {
-    console.error("Failed to save result:", err.response ?? err);
+    log(`Failed to save result:" ${err.response ?? err}`);
 
     return res.status(502).json({
       error: "Failed to save result to start.gg",
@@ -382,7 +391,7 @@ app.post("/submitFinal", async (req, res) => {
 
     return res.json(store.getState()[matchId]);
   } catch (err: any) {
-    console.error("Failed to submit final result:", err.response ?? err);
+    log(`Failed to submit final result: ${err.response ?? err}`);
 
     return res.status(502).json({
       error: "Failed to submit final result to start.gg",
@@ -405,7 +414,7 @@ app.post("/refresh", async (req, res) => {
       ...result,
     });
   } catch (err: any) {
-    console.error("Refresh failed:", err.response ?? err);
+    log(`Refresh failed: ${err.response ?? err}`);
 
     res.status(500).json({
       success: false,
@@ -424,7 +433,7 @@ bootstrap().then(() => {
     server.listen(3001, () => {
       const url = "http://localhost:3001";
 
-      console.log(`Server running on ${url}`);
+      log(`Server running on ${url}`);
       openBrowser(url);
     });
   });
