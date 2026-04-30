@@ -56,28 +56,6 @@ export default function App() {
     }
   }
 
-  async function saveConfig() {
-    setSavingConfig(true);
-
-    const res = await fetch("/config", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        STARTGG_API_TOKEN: tokenInput,
-      }),
-    });
-
-    setSavingConfig(false);
-
-    if (res.ok) {
-      setHasConfig(true);
-    } else {
-      alert("Failed to save config");
-    }
-  }
-
   useEffect(() => {
     socket.on("STATE_SYNC", (data) => {
       setMatches(data.matches);
