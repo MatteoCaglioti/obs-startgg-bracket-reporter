@@ -78,11 +78,7 @@ app.post("/config", (req, res) => {
   res.json({ ok: true });
 });
 
-const webDistPath = (process as any).pkg
-  ? path.join(path.dirname(process.execPath), "web-dist")
-  : path.join(__dirname, "../../web/dist");
-
-console.log("Serving frontend from:", webDistPath);
+const webDistPath = path.join(__dirname, "../../web/dist");
 
 app.use(express.static(webDistPath));
 
