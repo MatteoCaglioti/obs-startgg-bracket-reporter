@@ -417,6 +417,18 @@ app.post("/refresh", async (req, res) => {
   }
 });
 
+app.post("/config", (req, res) => {
+  const { STARTGG_API_TOKEN } = req.body;
+
+  if (!STARTGG_API_TOKEN || typeof STARTGG_API_TOKEN !== "string") {
+    return res.status(400).json({ error: "STARTGG_API_TOKEN is required" });
+  }
+
+  saveConfig({ STARTGG_API_TOKEN });
+
+  res.json({ ok: true });
+});
+
 app.get("*", (req, res) => {
   res.sendFile(path.join(webDistPath, "index.html"));
 });
