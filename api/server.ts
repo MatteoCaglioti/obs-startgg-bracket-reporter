@@ -12,6 +12,7 @@ import { getSets } from "./services/getSets";
 import { saveScoresToStartGG } from "./services/saveResult";
 import { mapSetToMatch } from "./services/mapToMatch";
 import { store } from "./core/store";
+import { exec } from "child_process";
 
 import type { TournamentStream } from "./core/types";
 import { getTournamentStreams } from "./services/getStreams";
@@ -101,6 +102,17 @@ store.subscribe((state, event) => {
 
   io.to(match.streamId).emit("MATCH_UPDATE", match);
 });
+
+function openBrowser(url: string) {
+  const command =
+    process.platform === "win32"
+      ? `start "" "${url}"`
+      : process.platform === "darwin"
+        ? `open "${url}"`
+        : `xdg-open "${url}"`;
+
+  exec(command);
+}
 
 async function bootstrap() {
   if (!getStartggApiKey()) {
@@ -408,7 +420,12 @@ app.get("*", (_req, res) => {
 });
 
 bootstrap().then(() => {
-  server.listen(3001, () => {
-    console.log("Server running on http://localhost:3001");
+  bootstrap().then(() => {
+    server.listen(3001, () => {
+      const url = "http://localhost:3001";
+
+      console.log(`Server running on ${url}`);
+      openBrowser(url);
+    });
   });
 });
