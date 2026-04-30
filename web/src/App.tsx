@@ -35,10 +35,15 @@ export default function App() {
   const [hasConfig, setHasConfig] = useState<boolean | null>(null);
   const [tokenInput, setTokenInput] = useState("");
   const [savingConfig, setSavingConfig] = useState(false);
+  const [slugInput, setSlugInput] = useState("");
+
+  const activeStreamId = selectedStream || streams[0]?.id || "";
 
   useEffect(() => {
     getConfig()
-      .then((data) => setHasConfig(data.hasStartggToken))
+      .then((data) =>
+        setHasConfig(data.hasStartggToken && data.hasTournamentSlug),
+      )
       .catch(() => setHasConfig(false));
   }, []);
 
@@ -46,11 +51,19 @@ export default function App() {
     setSavingConfig(true);
 
     try {
-      await saveConfig(tokenInput);
+      await saveConfig(tokenInput, slugInput);
       setHasConfig(true);
-      await refreshStartGG();
+
+      const [matchesData, streamsData] = await Promise.all([
+        getMatches(),
+        getStreams(),
+      ]);
+
+      setMatches(matchesData);
+      setStreams(streamsData);
+      setSelectedStream(streamsData[0]?.id ?? "");
     } catch {
-      alert("Failed to save Start.gg token");
+      alert("Failed to save Start.gg config");
     } finally {
       setSavingConfig(false);
     }
@@ -66,7 +79,7 @@ export default function App() {
       const matchForSelectedStream =
         matchesArray.find(
           (match) =>
-            match.streamId === selectedStream && match.status !== "complete",
+            match.streamId === activeStreamId && match.status !== "complete",
         ) ?? null;
 
       setCurrentMatch(matchForSelectedStream);
@@ -103,7 +116,7 @@ export default function App() {
     return () => {
       socket.off("MATCH_UPDATE");
     };
-  }, [selectedStream]);
+  }, [activeStreamId]);
 
   const availableMatches = Object.values(matches).filter(
     (m) => !m.streamId && m.status !== "complete",
@@ -117,7 +130,7 @@ export default function App() {
   }, []);
 
   const selectedStreamName =
-    streams.find((stream) => stream.id === selectedStream)?.name ??
+    streams.find((stream) => stream.id === activeStreamId)?.name ??
     "Stream Control";
 
   if (hasConfig === null) {
@@ -145,11 +158,22 @@ export default function App() {
               marginBottom: 12,
             }}
           />
+          <input
+            type="text"
+            value={slugInput}
+            onChange={(e) => setSlugInput(e.target.value)}
+            placeholder="Tournament Slug"
+            style={{
+              width: "100%",
+              padding: 12,
+              marginBottom: 12,
+            }}
+          />
 
           <button
             className="button"
             onClick={handleSaveConfig}
-            disabled={savingConfig || !tokenInput.trim()}
+            disabled={savingConfig || !tokenInput.trim() || !slugInput.trim()}
           >
             {savingConfig ? "Saving..." : "Save Token"}
           </button>
@@ -189,7 +213,7 @@ export default function App() {
           </label>
           <select
             id="stream-select"
-            value={selectedStream}
+            value={activeStreamId}
             onChange={(e) => setSelectedStream(e.target.value)}
           >
             {streams.map((stream) => (
@@ -227,7 +251,7 @@ export default function App() {
                 <button
                   className="button"
                   disabled={
-                    !selectedStream ||
+                    !activeStreamId ||
                     currentMatch?.status === "assigned" ||
                     currentMatch?.status === "live" ||
                     currentMatch?.status === "saved"
@@ -235,7 +259,7 @@ export default function App() {
                   onClick={async () => {
                     const updatedMatch = await assignMatch(
                       match.id,
-                      selectedStream,
+                      activeStreamId,
                     );
 
                     setMatches((prev) => ({

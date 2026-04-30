@@ -4,7 +4,11 @@ import path from "path";
 import { Server } from "socket.io";
 import cors from "cors";
 import fs from "fs";
-import { getStartggApiKey, saveConfig } from "./services/config";
+import {
+  getStartggApiKey,
+  getTournamentSlug,
+  saveConfig,
+} from "./services/config";
 import { isMatchNotNull } from "./core/types";
 import { assignStreamToSet } from "./services/assignStream";
 import { unassignStreamFromSet } from "./services/unassignStream";
@@ -13,7 +17,6 @@ import { getSets } from "./services/getSets";
 import { saveScoresToStartGG } from "./services/saveResult";
 import { mapSetToMatch } from "./services/mapToMatch";
 import { store } from "./core/store";
-import { exec } from "child_process";
 
 import type { TournamentStream } from "./core/types";
 import { getTournamentStreams } from "./services/getStreams";
@@ -31,7 +34,7 @@ const logPath = path.join(
 function log(message: string) {
   const line = `[${new Date().toISOString()}] ${message}\n`;
   fs.appendFileSync(logPath, line);
-  log(message);
+  console.log(message);
 }
 
 app.use(
@@ -47,11 +50,13 @@ const appDir = process.pkg ? path.dirname(process.execPath) : process.cwd();
 app.get("/config", (_req, res) => {
   res.json({
     hasStartggToken: Boolean(getStartggApiKey()),
+    hasTournamentSlug: Boolean(getTournamentSlug()),
+    tournamentSlug: getTournamentSlug(),
   });
 });
 
-app.post("/config", async (req, res) => {
-  const { STARTGG_API_TOKEN } = req.body;
+app.post("/config", (req, res) => {
+  const { STARTGG_API_TOKEN, TOURNAMENT_SLUG } = req.body;
 
   if (!STARTGG_API_TOKEN || typeof STARTGG_API_TOKEN !== "string") {
     return res.status(400).json({
@@ -59,29 +64,33 @@ app.post("/config", async (req, res) => {
     });
   }
 
-  try {
-    saveConfig({ STARTGG_API_TOKEN });
-
-    const result = await refreshFromStartGG();
-
-    io.emit("STATE_SYNC", {
-      matches: store.getState(),
-      streams,
-    });
-
-    return res.json({
-      ok: true,
-      ...result,
-    });
-  } catch (err: any) {
-    log(`Config saved, but refresh failed: ${err.response ?? err}`);
-
-    return res.status(500).json({
-      ok: false,
-      error: "Config saved, but failed to refresh from start.gg",
-      details: err.response?.errors ?? err.message,
+  if (!TOURNAMENT_SLUG || typeof TOURNAMENT_SLUG !== "string") {
+    return res.status(400).json({
+      error: "TOURNAMENT_SLUG is required",
     });
   }
+
+  saveConfig({
+    STARTGG_API_TOKEN,
+    TOURNAMENT_SLUG,
+  });
+
+  res.json({ ok: true });
+
+  setTimeout(() => {
+    refreshFromStartGG()
+      .then((result) => {
+        io.emit("STATE_SYNC", {
+          matches: store.getState(),
+          streams,
+        });
+
+        log(`Config saved and refreshed: ${JSON.stringify(result)}`);
+      })
+      .catch((err: any) => {
+        log(`Config saved, but refresh failed: ${err.response ?? err}`);
+      });
+  }, 100);
 });
 
 const webDistPath = path.join(__dirname, "../../web/dist");
@@ -115,20 +124,9 @@ store.subscribe((state, event) => {
   io.to(match.streamId).emit("MATCH_UPDATE", match);
 });
 
-function openBrowser(url: string) {
-  const command =
-    process.platform === "win32"
-      ? `start "" "${url}"`
-      : process.platform === "darwin"
-        ? `open "${url}"`
-        : `xdg-open "${url}"`;
-
-  exec(command);
-}
-
 async function bootstrap() {
-  if (!getStartggApiKey()) {
-    log("No Start.gg token configured yet. Skipping initial refresh.");
+  if (!getStartggApiKey() || !getTournamentSlug()) {
+    log("Start.gg token or tournament slug missing. Skipping initial refresh.");
     return;
   }
 
@@ -136,7 +134,11 @@ async function bootstrap() {
 }
 
 async function refreshFromStartGG() {
-  const slug = "test-tournament-1689";
+  const slug = getTournamentSlug();
+
+  if (!slug) {
+    throw new Error("TOURNAMENT_SLUG is required");
+  }
 
   const sets = await getSets(slug);
   const matches = sets.map(mapSetToMatch).filter(isMatchNotNull);
@@ -429,12 +431,7 @@ app.get("*", (_req, res) => {
 });
 
 bootstrap().then(() => {
-  bootstrap().then(() => {
-    server.listen(3001, () => {
-      const url = "http://localhost:3001";
-
-      log(`Server running on ${url}`);
-      openBrowser(url);
-    });
+  server.listen(3001, () => {
+    log("Server running on http://localhost:3001");
   });
 });

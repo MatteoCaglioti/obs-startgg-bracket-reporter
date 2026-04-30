@@ -1,4 +1,4 @@
-name: Build Windows Release
+name: Build Release
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build:
+  build-windows:
     runs-on: windows-latest
 
     steps:
@@ -19,37 +19,16 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install web dependencies
-        working-directory: web
+      - name: Install root dependencies
         run: npm ci
 
-      - name: Build web
-        working-directory: web
-        run: npm run build
-
-      - name: Install api dependencies
-        working-directory: api
-        run: npm ci
-
-      - name: Build api
-        working-directory: api
-        run: npm run build
-
-      - name: Prepare release folder
-        run: |
-          if (Test-Path release) {
-            Remove-Item -Recurse -Force release
-          }
-          New-Item -ItemType Directory -Path release
-
-      - name: Package executable
-        working-directory: api
-        run: npm run package
-
-      - name: Zip release
-        run: Compress-Archive -Path release\* -DestinationPath obs-startgg-app-windows.zip
+      - name: Build Electron installer
+        run: npm run dist
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: obs-startgg-app-windows.zip
+          files: |
+            release/*.exe
+            release/*.blockmap
+            release/latest.yml

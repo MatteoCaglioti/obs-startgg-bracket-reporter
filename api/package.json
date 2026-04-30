@@ -6,7 +6,7 @@
   "scripts": {
     "start": "ts-node server.ts",
     "build": "tsc",
-    "package": "nexe dist/server.js -t windows-x64-20.0.0 -o ../release/obs-startgg-app.exe --build"
+    "package": "pkg . --targets node20-win-x64 --output ../release/obs-startgg-app.exe"
   },
   "pkg": {
     "assets": [
@@ -24,7 +24,6 @@
     "@types/express": "^5.0.6",
     "@types/node": "^24.12.2",
     "@yao-pkg/pkg": "^6.18.2",
-    "nexe": "^5.0.0-beta.4",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.0"
   }

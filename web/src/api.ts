@@ -77,9 +77,13 @@ export const getConfig = async () => {
   return res.data;
 };
 
-export const saveConfig = async (STARTGG_API_TOKEN: string) => {
+export const saveConfig = async (
+  STARTGG_API_TOKEN: string,
+  TOURNAMENT_SLUG: string,
+) => {
   const res = await axios.post(`${API}/config`, {
     STARTGG_API_TOKEN,
+    TOURNAMENT_SLUG,
   });
 
   return res.data;

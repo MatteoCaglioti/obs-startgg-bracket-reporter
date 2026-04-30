@@ -11,6 +11,7 @@ declare global {
 
 export type AppConfig = {
   STARTGG_API_TOKEN?: string;
+  TOURNAMENT_SLUG?: string;
 };
 
 const appDir = process.pkg ? path.dirname(process.execPath) : process.cwd();
@@ -20,7 +21,14 @@ export function readConfig(): AppConfig {
   if (!fs.existsSync(configPath)) {
     fs.writeFileSync(
       configPath,
-      JSON.stringify({ STARTGG_API_TOKEN: "" }, null, 2),
+      JSON.stringify(
+        {
+          STARTGG_API_TOKEN: "",
+          TOURNAMENT_SLUG: "",
+        },
+        null,
+        2,
+      ),
     );
   }
 
@@ -35,4 +43,10 @@ export function getStartggApiKey() {
   const config = readConfig();
 
   return process.env.STARTGG_API_TOKEN || config.STARTGG_API_TOKEN || "";
+}
+
+export function getTournamentSlug() {
+  const config = readConfig();
+
+  return process.env.TOURNAMENT_SLUG || config.TOURNAMENT_SLUG || "";
 }
