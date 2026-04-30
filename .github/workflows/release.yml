@@ -35,8 +35,12 @@ jobs:
         working-directory: api
         run: npm run build
 
-      - name: Create release folder
-        run: mkdir release
+      - name: Prepare release folder
+        run: |
+          if (Test-Path release) {
+            Remove-Item -Recurse -Force release
+          }
+          New-Item -ItemType Directory -Path release
 
       - name: Package executable
         working-directory: api
