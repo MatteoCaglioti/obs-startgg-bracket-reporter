@@ -1,39 +1,33 @@
 const { app, BrowserWindow } = require("electron");
-const { fork } = require("child_process");
 const path = require("path");
 
-let serverProcess;
+function startServer() {
+  const serverPath = app.isPackaged
+    ? path.join(process.resourcesPath, "app.asar", "api", "dist", "server.js")
+    : path.join(__dirname, "../api/dist/server.js");
+
+  require(serverPath);
+}
 
 function createWindow() {
   const win = new BrowserWindow({
     width: 1920,
     height: 1080,
     autoHideMenuBar: true,
+    icon: path.join(__dirname, "../build/icon.ico"),
   });
 
   win.loadURL("http://localhost:3001");
 }
 
 app.whenReady().then(() => {
-  const serverPath = app.isPackaged
-    ? path.join(process.resourcesPath, "app.asar", "api", "dist", "server.js")
-    : path.join(__dirname, "../api/dist/server.js");
+  startServer();
 
-  serverProcess = fork(serverPath, [], {
-    cwd: app.isPackaged
-      ? path.join(process.resourcesPath, "app.asar")
-      : path.join(__dirname, ".."),
-    env: {
-      ...process.env,
-      ELECTRON_RUN_AS_NODE: "1",
-    },
-    stdio: "ignore",
-  });
-
-  setTimeout(createWindow, 1500);
+  setTimeout(() => {
+    createWindow();
+  }, 1000);
 });
 
 app.on("window-all-closed", () => {
-  if (serverProcess) serverProcess.kill();
   app.quit();
 });
