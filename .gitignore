@@ -26,3 +26,4 @@ dist-ssr
 *.sw?
 app.log
 config.json
+/release
