@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "main": "electron/main.js",
   "scripts": {
-    "build:web": "cd web && npm ci && npm run build",
-    "build:api": "cd api && npm ci && npm run build",
+    "install:all": "npm ci && cd api && npm ci && cd ../web && npm ci",
+    "build:web": "cd web && npm run build",
+    "build:api": "cd api && npm run build",
     "build": "npm run build:web && npm run build:api",
-    "electron": "npm run build && electron .",
-    "dist": "npm run build && electron-builder --win --x64 --publish never"
+    "dist": "npm run install:all && npm run build && electron-builder --win --x64 --publish never"
   },
   "build": {
     "appId": "com.obsstartgg.bracketreporter",

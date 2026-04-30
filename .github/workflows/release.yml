@@ -1,4 +1,4 @@
-name: Build Release
+name: Build Electron Release
 
 on:
   push:
@@ -22,10 +22,7 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install root dependencies
-        run: npm ci
-
-      - name: Build Electron app
+      - name: Build Electron installer
         run: npm run dist
 
       - name: Publish GitHub Release

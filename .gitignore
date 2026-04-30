@@ -26,4 +26,8 @@ dist-ssr
 *.sw?
 app.log
 config.json
-/release
+release/
+api/release/
+*.exe
+*.blockmap
+latest.yml
