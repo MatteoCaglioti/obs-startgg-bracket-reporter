@@ -20,7 +20,6 @@ import { finalSubmitResultToStartGG } from "./services/submitResult";
 
 let streams: TournamentStream[] = [];
 
-
 const app = express();
 
 app.use(
@@ -79,7 +78,11 @@ app.post("/config", (req, res) => {
   res.json({ ok: true });
 });
 
-const webDistPath = path.join(__dirname, "../../web/dist");
+const webDistPath = (process as any).pkg
+  ? path.join(path.dirname(process.execPath), "web-dist")
+  : path.join(__dirname, "../../web/dist");
+
+console.log("Serving frontend from:", webDistPath);
 
 app.use(express.static(webDistPath));
 
@@ -411,24 +414,8 @@ app.post("/refresh", async (req, res) => {
   }
 });
 
-app.get("/config", (_req, res) => {
-  res.json({
-    hasStartggToken: Boolean(getStartggApiKey()),
-  });
-});
-
-app.post("/config", (req, res) => {
-  const { STARTGG_API_TOKEN } = req.body;
-
-  if (!STARTGG_API_TOKEN || typeof STARTGG_API_TOKEN !== "string") {
-    return res.status(400).json({
-      error: "STARTGG_API_TOKEN is required",
-    });
-  }
-
-  saveConfig({ STARTGG_API_TOKEN });
-
-  res.json({ ok: true });
+app.get("*", (_req, res) => {
+  res.sendFile(path.join(webDistPath, "index.html"));
 });
 
 bootstrap().then(() => {
