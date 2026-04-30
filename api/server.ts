@@ -1,5 +1,6 @@
 import express from "express";
 import http from "http";
+import path from "path";
 import { Server } from "socket.io";
 import cors from "cors";
 
@@ -19,16 +20,24 @@ import { finalSubmitResultToStartGG } from "./services/submitResult";
 let streams: TournamentStream[] = [];
 
 const app = express();
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", "http://localhost:3001"],
   }),
 );
+
 app.use(express.json());
+
+const webDistPath = path.join(__dirname, "../../web/dist");
+
+app.use(express.static(webDistPath));
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  cors: { origin: "http://localhost:5173" },
+  cors: {
+    origin: ["http://localhost:5173", "http://localhost:3001"],
+  },
 });
 
 io.on("connection", (socket) => {
@@ -107,7 +116,7 @@ app.post("/assign", async (req, res) => {
     });
   }
 
-  console.log(match.status)
+  console.log(match.status);
 
   if (match.status === "complete") {
     return res.status(409).json({
@@ -345,6 +354,10 @@ app.post("/refresh", async (req, res) => {
       details: err.response?.errors ?? err.message,
     });
   }
+});
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(webDistPath, "index.html"));
 });
 
 bootstrap().then(() => {

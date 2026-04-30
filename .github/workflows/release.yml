@@ -1,0 +1,51 @@
+name: Build Windows Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Build web
+        working-directory: web
+        run: npm run build
+
+      - name: Install api dependencies
+        working-directory: api
+        run: npm ci
+
+      - name: Build api
+        working-directory: api
+        run: npm run build
+
+      - name: Create release folder
+        run: mkdir release
+
+      - name: Package executable
+        working-directory: api
+        run: npm run package
+
+      - name: Zip release
+        run: Compress-Archive -Path release\* -DestinationPath obs-startgg-app-windows.zip
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: obs-startgg-app-windows.zip

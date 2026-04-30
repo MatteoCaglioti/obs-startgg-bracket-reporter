@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API = "http://localhost:3001";
+const API = "";
 
 export const assignMatch = async (matchId: string, streamId: string) => {
   const res = await axios.post(`${API}/assign`, {
