@@ -198,7 +198,7 @@ export default function App() {
               className="button ghost"
               disabled={!currentMatch}
               onClick={async () => {
-                const updatedMatch = await unassignMatch(currentMatch?.id);
+                const updatedMatch = await unassignMatch(currentMatch?.id || "");
 
                 setMatches((prev) => ({
                   ...prev,
