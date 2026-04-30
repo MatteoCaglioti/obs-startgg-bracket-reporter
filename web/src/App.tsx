@@ -30,6 +30,38 @@ export default function App() {
   const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
   const [streams, setStreams] = useState<TournamentStream[]>([]);
   const [selectedStream, setSelectedStream] = useState<string>("");
+  const [hasConfig, setHasConfig] = useState<boolean | null>(null);
+  const [tokenInput, setTokenInput] = useState("");
+  const [savingConfig, setSavingConfig] = useState(false);
+
+  useEffect(() => {
+    fetch("/config")
+      .then((res) => res.json())
+      .then((data) => setHasConfig(data.hasStartggToken))
+      .catch(() => setHasConfig(false));
+  }, []);
+
+  async function saveConfig() {
+    setSavingConfig(true);
+
+    const res = await fetch("/config", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        STARTGG_API_TOKEN: tokenInput,
+      }),
+    });
+
+    setSavingConfig(false);
+
+    if (res.ok) {
+      setHasConfig(true);
+    } else {
+      alert("Failed to save config");
+    }
+  }
 
   useEffect(() => {
     socket.on("STATE_SYNC", (data) => {
@@ -92,7 +124,37 @@ export default function App() {
   }, []);
 
   const selectedStreamName =
-    streams.find((stream) => stream.id === selectedStream)?.name ?? "Stream Control";
+    streams.find((stream) => stream.id === selectedStream)?.name ??
+    "Stream Control";
+
+  if (hasConfig === null) {
+    return <div>Loading...</div>;
+  }
+
+  if (!hasConfig) {
+    return (
+      <div style={{ padding: 24, maxWidth: 500 }}>
+        <h1>Setup Required</h1>
+        <p>Enter your Start.gg API token to continue.</p>
+
+        <input
+          type="password"
+          value={tokenInput}
+          onChange={(e) => setTokenInput(e.target.value)}
+          placeholder="Start.gg API Token"
+          style={{
+            width: "100%",
+            padding: 12,
+            marginBottom: 12,
+          }}
+        />
+
+        <button onClick={saveConfig} disabled={savingConfig || !tokenInput}>
+          {savingConfig ? "Saving..." : "Save Config"}
+        </button>
+      </div>
+    );
+  }
 
   return (
     <main className="app-shell">
@@ -101,7 +163,8 @@ export default function App() {
           <p className="eyebrow">Tournament operations</p>
           <h1>Stream Control Dashboard</h1>
           <p className="hero-copy">
-            Same working match logic, upgraded with a cleaner control-room interface.
+            Same working match logic, upgraded with a cleaner control-room
+            interface.
           </p>
         </div>
         <button className="button secondary" onClick={refreshStartGG}>
@@ -151,7 +214,8 @@ export default function App() {
                   <div>
                     <span className="pill">{getStatusLabel(match.status)}</span>
                     <h3>
-                      {match.player1.name} <span className="muted-text">vs</span>{" "}
+                      {match.player1.name}{" "}
+                      <span className="muted-text">vs</span>{" "}
                       {match.player2.name}
                     </h3>
                     <p>{match.round}</p>
@@ -198,7 +262,9 @@ export default function App() {
               className="button ghost"
               disabled={!currentMatch}
               onClick={async () => {
-                const updatedMatch = await unassignMatch(currentMatch?.id || "");
+                const updatedMatch = await unassignMatch(
+                  currentMatch?.id || "",
+                );
 
                 setMatches((prev) => ({
                   ...prev,
@@ -217,7 +283,9 @@ export default function App() {
               <div>
                 <div className="empty-icon">↗</div>
                 <h3>No match assigned</h3>
-                <p>Assign a set from the queue to begin controlling this stream.</p>
+                <p>
+                  Assign a set from the queue to begin controlling this stream.
+                </p>
               </div>
             </div>
           )}
@@ -235,7 +303,9 @@ export default function App() {
                 <div className="players-grid">
                   <div
                     className={`player-score ${
-                      currentMatch.score1 > currentMatch.score2 ? "is-leading" : ""
+                      currentMatch.score1 > currentMatch.score2
+                        ? "is-leading"
+                        : ""
                     }`}
                   >
                     <span>{currentMatch.player1.name}</span>
@@ -245,7 +315,8 @@ export default function App() {
                       <button
                         className="stepper-button"
                         disabled={
-                          currentMatch.status === "assigned" || currentMatch.score1 <= 0
+                          currentMatch.status === "assigned" ||
+                          currentMatch.score1 <= 0
                         }
                         onClick={async () => {
                           const updatedMatch = await updateScore(
@@ -292,7 +363,9 @@ export default function App() {
 
                   <div
                     className={`player-score ${
-                      currentMatch.score2 > currentMatch.score1 ? "is-leading" : ""
+                      currentMatch.score2 > currentMatch.score1
+                        ? "is-leading"
+                        : ""
                     }`}
                   >
                     <span>{currentMatch.player2.name}</span>
@@ -302,7 +375,8 @@ export default function App() {
                       <button
                         className="stepper-button"
                         disabled={
-                          currentMatch.status === "assigned" || currentMatch.score2 <= 0
+                          currentMatch.status === "assigned" ||
+                          currentMatch.score2 <= 0
                         }
                         onClick={async () => {
                           const updatedMatch = await updateScore(
@@ -398,7 +472,9 @@ export default function App() {
 
                     if (!confirmed) return;
 
-                    const updatedMatch = await submitFinalResult(currentMatch.id);
+                    const updatedMatch = await submitFinalResult(
+                      currentMatch.id,
+                    );
 
                     setMatches((prev) => ({
                       ...prev,

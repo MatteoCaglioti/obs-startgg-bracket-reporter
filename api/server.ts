@@ -1,6 +1,7 @@
 import express from "express";
 import http from "http";
 import path from "path";
+import fs from "fs";
 import { Server } from "socket.io";
 import cors from "cors";
 
@@ -19,6 +20,14 @@ import { finalSubmitResultToStartGG } from "./services/submitResult";
 
 let streams: TournamentStream[] = [];
 
+declare global {
+  namespace NodeJS {
+    interface Process {
+      pkg?: any;
+    }
+  }
+}
+
 const app = express();
 
 app.use(
@@ -28,6 +37,58 @@ app.use(
 );
 
 app.use(express.json());
+
+const appDir = process.pkg ? path.dirname(process.execPath) : process.cwd();
+
+const configPath = path.join(appDir, "config.json");
+
+type AppConfig = {
+  STARTGG_API_TOKEN?: string;
+};
+
+function readConfig(): AppConfig {
+  if (!fs.existsSync(configPath)) {
+    fs.writeFileSync(
+      configPath,
+      JSON.stringify({ STARTGG_API_TOKEN: "" }, null, 2),
+    );
+  }
+
+  return JSON.parse(fs.readFileSync(configPath, "utf-8"));
+}
+
+function saveConfig(config: AppConfig) {
+  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+}
+
+let appConfig = readConfig();
+
+function getStartggToken() {
+  return process.env.STARTGG_API_TOKEN || appConfig.STARTGG_API_TOKEN;
+}
+
+app.get("/config", (_req, res) => {
+  res.json({
+    hasStartggToken: Boolean(getStartggToken()),
+  });
+});
+
+app.post("/config", (req, res) => {
+  const { STARTGG_API_TOKEN } = req.body;
+
+  if (!STARTGG_API_TOKEN || typeof STARTGG_API_TOKEN !== "string") {
+    return res.status(400).json({ error: "STARTGG_API_TOKEN is required" });
+  }
+
+  appConfig = {
+    ...appConfig,
+    STARTGG_API_TOKEN,
+  };
+
+  saveConfig(appConfig);
+
+  res.json({ ok: true });
+});
 
 const webDistPath = path.join(__dirname, "../../web/dist");
 
