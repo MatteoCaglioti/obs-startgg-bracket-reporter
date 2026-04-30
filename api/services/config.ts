@@ -4,23 +4,23 @@ import path from "path";
 declare global {
   namespace NodeJS {
     interface Process {
-      pkg?: any;
+      pkg?: unknown;
     }
   }
 }
 
-const appDir = process.pkg ? path.dirname(process.execPath) : process.cwd();
-const configPath = path.join(appDir, "config.json");
-
-type AppConfig = {
+export type AppConfig = {
   STARTGG_API_TOKEN?: string;
 };
+
+const appDir = process.pkg ? path.dirname(process.execPath) : process.cwd();
+const configPath = path.join(appDir, "config.json");
 
 export function readConfig(): AppConfig {
   if (!fs.existsSync(configPath)) {
     fs.writeFileSync(
       configPath,
-      JSON.stringify({ STARTGG_API_KEY: "" }, null, 2),
+      JSON.stringify({ STARTGG_API_TOKEN: "" }, null, 2),
     );
   }
 
@@ -34,9 +34,5 @@ export function saveConfig(config: AppConfig) {
 export function getStartggApiKey() {
   const config = readConfig();
 
-  return (
-    process.env.STARTGG_API_TOKEN ||
-    config.STARTGG_API_TOKEN ||
-    ""
-  );
+  return process.env.STARTGG_API_TOKEN || config.STARTGG_API_TOKEN || "";
 }

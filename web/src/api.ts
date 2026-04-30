@@ -71,3 +71,16 @@ export const refreshStartGG = async () => {
   const res = await axios.post(`${API}/refresh`);
   return res.data;
 };
+
+export const getConfig = async () => {
+  const res = await axios.get(`${API}/config`);
+  return res.data;
+};
+
+export const saveConfig = async (STARTGG_API_TOKEN: string) => {
+  const res = await axios.post(`${API}/config`, {
+    STARTGG_API_TOKEN,
+  });
+
+  return res.data;
+};

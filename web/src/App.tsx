@@ -10,6 +10,8 @@ import {
   saveResult,
   refreshStartGG,
   submitFinalResult,
+  getConfig,
+  saveConfig,
 } from "./api";
 import type { Match, TournamentStream } from "./types";
 
@@ -35,11 +37,24 @@ export default function App() {
   const [savingConfig, setSavingConfig] = useState(false);
 
   useEffect(() => {
-    fetch("/config")
-      .then((res) => res.json())
+    getConfig()
       .then((data) => setHasConfig(data.hasStartggToken))
       .catch(() => setHasConfig(false));
   }, []);
+
+  async function handleSaveConfig() {
+    setSavingConfig(true);
+
+    try {
+      await saveConfig(tokenInput);
+      setHasConfig(true);
+      await refreshStartGG();
+    } catch {
+      alert("Failed to save Start.gg token");
+    } finally {
+      setSavingConfig(false);
+    }
+  }
 
   async function saveConfig() {
     setSavingConfig(true);
@@ -128,31 +143,40 @@ export default function App() {
     "Stream Control";
 
   if (hasConfig === null) {
-    return <div>Loading...</div>;
+    return <main className="app-shell">Loading...</main>;
   }
 
   if (!hasConfig) {
     return (
-      <div style={{ padding: 24, maxWidth: 500 }}>
-        <h1>Setup Required</h1>
-        <p>Enter your Start.gg API token to continue.</p>
+      <main className="app-shell">
+        <section
+          className="panel"
+          style={{ maxWidth: 520, margin: "60px auto" }}
+        >
+          <h1>Setup Required</h1>
+          <p>Enter your Start.gg API token to continue.</p>
 
-        <input
-          type="password"
-          value={tokenInput}
-          onChange={(e) => setTokenInput(e.target.value)}
-          placeholder="Start.gg API Token"
-          style={{
-            width: "100%",
-            padding: 12,
-            marginBottom: 12,
-          }}
-        />
+          <input
+            type="password"
+            value={tokenInput}
+            onChange={(e) => setTokenInput(e.target.value)}
+            placeholder="Start.gg API Token"
+            style={{
+              width: "100%",
+              padding: 12,
+              marginBottom: 12,
+            }}
+          />
 
-        <button onClick={saveConfig} disabled={savingConfig || !tokenInput}>
-          {savingConfig ? "Saving..." : "Save Config"}
-        </button>
-      </div>
+          <button
+            className="button"
+            onClick={handleSaveConfig}
+            disabled={savingConfig || !tokenInput.trim()}
+          >
+            {savingConfig ? "Saving..." : "Save Token"}
+          </button>
+        </section>
+      </main>
     );
   }
 

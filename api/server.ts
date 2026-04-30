@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs";
 import { Server } from "socket.io";
 import cors from "cors";
-
+import { getStartggApiKey, saveConfig } from "./services/config";
 import { isMatchNotNull } from "./core/types";
 import { assignStreamToSet } from "./services/assignStream";
 import { unassignStreamFromSet } from "./services/unassignStream";
@@ -20,13 +20,6 @@ import { finalSubmitResultToStartGG } from "./services/submitResult";
 
 let streams: TournamentStream[] = [];
 
-declare global {
-  namespace NodeJS {
-    interface Process {
-      pkg?: any;
-    }
-  }
-}
 
 const app = express();
 
@@ -55,10 +48,6 @@ function readConfig(): AppConfig {
   }
 
   return JSON.parse(fs.readFileSync(configPath, "utf-8"));
-}
-
-function saveConfig(config: AppConfig) {
-  fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 }
 
 let appConfig = readConfig();
@@ -122,6 +111,11 @@ store.subscribe((state, event) => {
 });
 
 async function bootstrap() {
+  if (!getStartggApiKey()) {
+    console.log("No Start.gg token configured yet. Skipping initial refresh.");
+    return;
+  }
+
   await refreshFromStartGG();
 }
 
@@ -417,20 +411,24 @@ app.post("/refresh", async (req, res) => {
   }
 });
 
+app.get("/config", (_req, res) => {
+  res.json({
+    hasStartggToken: Boolean(getStartggApiKey()),
+  });
+});
+
 app.post("/config", (req, res) => {
   const { STARTGG_API_TOKEN } = req.body;
 
   if (!STARTGG_API_TOKEN || typeof STARTGG_API_TOKEN !== "string") {
-    return res.status(400).json({ error: "STARTGG_API_TOKEN is required" });
+    return res.status(400).json({
+      error: "STARTGG_API_TOKEN is required",
+    });
   }
 
   saveConfig({ STARTGG_API_TOKEN });
 
   res.json({ ok: true });
-});
-
-app.get("*", (req, res) => {
-  res.sendFile(path.join(webDistPath, "index.html"));
 });
 
 bootstrap().then(() => {
