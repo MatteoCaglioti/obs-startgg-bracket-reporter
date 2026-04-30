@@ -1,5 +1,5 @@
 const { app, BrowserWindow } = require("electron");
-const { spawn } = require("child_process");
+const { fork } = require("child_process");
 const path = require("path");
 
 let serverProcess;
@@ -8,7 +8,7 @@ function createWindow() {
   const win = new BrowserWindow({
     width: 1920,
     height: 1080,
-    autoHideMenuBar: true
+    autoHideMenuBar: true,
   });
 
   win.loadURL("http://localhost:3001");
@@ -19,12 +19,15 @@ app.whenReady().then(() => {
     ? path.join(process.resourcesPath, "app.asar", "api", "dist", "server.js")
     : path.join(__dirname, "../api/dist/server.js");
 
-  serverProcess = spawn(process.execPath, [serverPath], {
+  serverProcess = fork(serverPath, [], {
     cwd: app.isPackaged
       ? path.join(process.resourcesPath, "app.asar")
       : path.join(__dirname, ".."),
+    env: {
+      ...process.env,
+      ELECTRON_RUN_AS_NODE: "1",
+    },
     stdio: "ignore",
-    shell: false
   });
 
   setTimeout(createWindow, 1500);
