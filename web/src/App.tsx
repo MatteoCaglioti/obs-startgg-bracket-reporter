@@ -196,9 +196,9 @@ export default function App() {
             </div>
             <button
               className="button ghost"
-              disabled={!currentMatch?.id}
+              disabled={!currentMatch}
               onClick={async () => {
-                const updatedMatch = await unassignMatch(currentMatch.id);
+                const updatedMatch = await unassignMatch(currentMatch?.id);
 
                 setMatches((prev) => ({
                   ...prev,
