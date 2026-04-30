@@ -1,7 +1,6 @@
 import express from "express";
 import http from "http";
 import path from "path";
-import fs from "fs";
 import { Server } from "socket.io";
 import cors from "cors";
 import { getStartggApiKey, saveConfig } from "./services/config";
@@ -32,50 +31,44 @@ app.use(express.json());
 
 const appDir = process.pkg ? path.dirname(process.execPath) : process.cwd();
 
-const configPath = path.join(appDir, "config.json");
-
-type AppConfig = {
-  STARTGG_API_TOKEN?: string;
-};
-
-function readConfig(): AppConfig {
-  if (!fs.existsSync(configPath)) {
-    fs.writeFileSync(
-      configPath,
-      JSON.stringify({ STARTGG_API_TOKEN: "" }, null, 2),
-    );
-  }
-
-  return JSON.parse(fs.readFileSync(configPath, "utf-8"));
-}
-
-let appConfig = readConfig();
-
-function getStartggToken() {
-  return process.env.STARTGG_API_TOKEN || appConfig.STARTGG_API_TOKEN;
-}
-
 app.get("/config", (_req, res) => {
   res.json({
-    hasStartggToken: Boolean(getStartggToken()),
+    hasStartggToken: Boolean(getStartggApiKey()),
   });
 });
 
-app.post("/config", (req, res) => {
+app.post("/config", async (req, res) => {
   const { STARTGG_API_TOKEN } = req.body;
 
   if (!STARTGG_API_TOKEN || typeof STARTGG_API_TOKEN !== "string") {
-    return res.status(400).json({ error: "STARTGG_API_TOKEN is required" });
+    return res.status(400).json({
+      error: "STARTGG_API_TOKEN is required",
+    });
   }
 
-  appConfig = {
-    ...appConfig,
-    STARTGG_API_TOKEN,
-  };
+  try {
+    saveConfig({ STARTGG_API_TOKEN });
 
-  saveConfig(appConfig);
+    const result = await refreshFromStartGG();
 
-  res.json({ ok: true });
+    io.emit("STATE_SYNC", {
+      matches: store.getState(),
+      streams,
+    });
+
+    return res.json({
+      ok: true,
+      ...result,
+    });
+  } catch (err: any) {
+    console.error("Config saved, but refresh failed:", err.response ?? err);
+
+    return res.status(500).json({
+      ok: false,
+      error: "Config saved, but failed to refresh from start.gg",
+      details: err.response?.errors ?? err.message,
+    });
+  }
 });
 
 const webDistPath = path.join(__dirname, "../../web/dist");
