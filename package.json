@@ -7,7 +7,7 @@
     "build:api": "cd api && npm ci && npm run build",
     "build": "npm run build:web && npm run build:api",
     "electron": "npm run build && electron .",
-    "dist": "npm run build && electron-builder --win --x64"
+    "dist": "npm run build && electron-builder --win --x64 --publish never"
   },
   "build": {
     "appId": "com.obsstartgg.bracketreporter",

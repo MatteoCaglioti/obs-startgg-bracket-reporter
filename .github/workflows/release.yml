@@ -12,6 +12,9 @@ jobs:
   build-windows:
     runs-on: windows-latest
 
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -19,16 +22,6 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install root dependencies
-        run: npm ci
+      - run: npm ci
 
-      - name: Build Electron installer
-        run: npm run dist
-
-      - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            release/*.exe
-            release/*.blockmap
-            release/latest.yml
+      - run: npm run dist
