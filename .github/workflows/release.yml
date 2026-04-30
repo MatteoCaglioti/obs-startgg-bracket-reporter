@@ -22,6 +22,16 @@ jobs:
         with:
           node-version: 22
 
-      - run: npm ci
+      - name: Install root dependencies
+        run: npm ci
 
-      - run: npm run dist
+      - name: Build Electron app
+        run: npm run dist
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.exe
+            release/*.blockmap
+            release/latest.yml
