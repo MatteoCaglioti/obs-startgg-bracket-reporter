@@ -130,7 +130,7 @@ export default function App() {
   }, []);
 
   const selectedStreamName =
-    streams.find((stream) => stream.id === activeStreamId)?.name ??
+    streams?.find((stream) => stream.id === activeStreamId)?.name ||
     "Stream Control";
 
   if (hasConfig === null) {

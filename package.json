@@ -3,6 +3,8 @@
   "version": "1.0.0",
   "main": "electron/main.js",
   "scripts": {
+    "dev:api": "cd api &&  npm run start",
+    "dev:web": "cd web && npm run dev",
     "install:all": "npm ci && cd api && npm ci && cd ../web && npm ci",
     "build:web": "cd web && npm run build",
     "build:api": "cd api && npm run build",

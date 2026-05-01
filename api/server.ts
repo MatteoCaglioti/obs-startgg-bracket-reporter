@@ -93,9 +93,17 @@ app.post("/config", (req, res) => {
   }, 100);
 });
 
-const webDistPath = path.join(__dirname, "../../web/dist");
+const isProd = (process as any).pkg || process.env.ELECTRON_IS_PACKAGED === "true";
+if (isProd) {
+  const webDistPath = path.join(__dirname, "../../web/dist");
 
-app.use(express.static(webDistPath));
+  app.use(express.static(webDistPath));
+
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(webDistPath, "index.html"));
+  });
+}
+
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -424,10 +432,6 @@ app.post("/refresh", async (req, res) => {
       details: err.response?.errors ?? err.message,
     });
   }
-});
-
-app.get("*", (_req, res) => {
-  res.sendFile(path.join(webDistPath, "index.html"));
 });
 
 bootstrap().then(() => {
