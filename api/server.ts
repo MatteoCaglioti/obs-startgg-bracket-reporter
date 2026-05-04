@@ -45,8 +45,6 @@ app.use(
 
 app.use(express.json());
 
-const appDir = process.pkg ? path.dirname(process.execPath) : process.cwd();
-
 app.get("/config", (_req, res) => {
   res.json({
     hasStartggToken: Boolean(getStartggApiKey()),
@@ -93,7 +91,7 @@ app.post("/config", (req, res) => {
   }, 100);
 });
 
-const isProd = (process as any).pkg || process.env.ELECTRON_IS_PACKAGED === "true";
+const isProd = (process as any).pkg || process.env.IS_PROD === "true";
 if (isProd) {
   const webDistPath = path.join(__dirname, "../../web/dist");
 
@@ -103,7 +101,6 @@ if (isProd) {
     res.sendFile(path.join(webDistPath, "index.html"));
   });
 }
-
 
 const server = http.createServer(app);
 const io = new Server(server, {

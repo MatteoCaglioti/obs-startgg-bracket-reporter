@@ -21,6 +21,8 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // set this BEFORE requiring server
+  process.env.IS_PROD = app.isPackaged ? "true" : "false";
   startServer();
 
   setTimeout(() => {
