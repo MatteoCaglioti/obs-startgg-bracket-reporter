@@ -2,6 +2,8 @@ const { app, BrowserWindow } = require("electron");
 const path = require("path");
 
 function startServer() {
+  process.env.IS_PROD = app.isPackaged ? "true" : "false";
+
   const serverPath = app.isPackaged
     ? path.join(process.resourcesPath, "app.asar", "api", "dist", "server.js")
     : path.join(__dirname, "../api/dist/server.js");
@@ -14,22 +16,16 @@ function createWindow() {
     width: 1920,
     height: 1080,
     autoHideMenuBar: true,
-    icon: path.join(__dirname, "../build/icon.ico"),
   });
 
-  win.loadURL("http://localhost:3001");
+  if (app.isPackaged) {
+    win.loadFile(path.join(process.resourcesPath, "app.asar", "web", "dist", "index.html"));
+  } else {
+    win.loadURL("http://localhost:5173");
+  }
 }
 
 app.whenReady().then(() => {
-  // set this BEFORE requiring server
-  process.env.IS_PROD = app.isPackaged ? "true" : "false";
   startServer();
-
-  setTimeout(() => {
-    createWindow();
-  }, 1000);
-});
-
-app.on("window-all-closed", () => {
-  app.quit();
+  createWindow();
 });
