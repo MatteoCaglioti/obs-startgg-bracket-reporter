@@ -64,7 +64,18 @@ export default function App() {
     }
   };
 
-  async function handleSaveConfig() {
+  const unassignStreamMatch = async () => {
+    const updatedMatch = await unassignMatch(currentMatch?.id || "");
+
+    setMatches((prev) => ({
+      ...prev,
+      [updatedMatch.id]: updatedMatch,
+    }));
+
+    setCurrentMatch(null);
+  };
+
+  const handleSaveConfig = async () => {
     setSavingConfig(true);
 
     try {
@@ -75,7 +86,7 @@ export default function App() {
     } finally {
       setSavingConfig(false);
     }
-  }
+  };
 
   const availableMatches = Object.values(matches).filter(
     (m) =>
@@ -268,18 +279,7 @@ export default function App() {
             <button
               className="button ghost"
               disabled={!currentMatch}
-              onClick={async () => {
-                const updatedMatch = await unassignMatch(
-                  currentMatch?.id || "",
-                );
-
-                setMatches((prev) => ({
-                  ...prev,
-                  [updatedMatch.id]: updatedMatch,
-                }));
-
-                setCurrentMatch(null);
-              }}
+              onClick={() => unassignStreamMatch()}
             >
               Unassign Stream
             </button>
@@ -489,6 +489,7 @@ export default function App() {
                     }));
 
                     setCurrentMatch(updatedMatch);
+                    unassignStreamMatch();
                   }}
                 >
                   Submit Final Result
