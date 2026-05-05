@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { socket } from "./socket";
 import {
   assignMatch,
   unassignMatch,
@@ -77,30 +76,6 @@ export default function App() {
       setSavingConfig(false);
     }
   }
-
-
-  // Subscribe to stream updates
-  useEffect(() => {
-    socket.emit("subscribe", { streamId: "stream-1" });
-
-    socket.on("MATCH_UPDATE", (match: Match) => {
-      setMatches((prev) => ({
-        ...prev,
-        [match.id]: match,
-      }));
-
-      setCurrentMatch((prev) => {
-        if (match.streamId === selectedStream) return match;
-        if (prev?.id === match.id && match.streamId !== selectedStream)
-          return null;
-        return prev;
-      });
-    });
-
-    return () => {
-      socket.off("MATCH_UPDATE");
-    };
-  }, [activeStreamId]);
 
   const availableMatches = Object.values(matches).filter(
     (m) =>
