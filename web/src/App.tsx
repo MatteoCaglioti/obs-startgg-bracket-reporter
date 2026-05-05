@@ -38,6 +38,16 @@ export default function App() {
   );
   const [isBusy, setIsBusy] = useState(false);
 
+  const emptyStreamControlMatchComponent = () => {
+    return (
+      <div className="empty-state">
+        <div className="empty-icon">↗</div>
+        <h3>No match assigned</h3>
+        <p>Assign a set from the queue to begin controlling this stream.</p>
+      </div>
+    );
+  };
+
   const refreshFromStartGG = async () => {
     setIsBusy(true);
 
@@ -82,6 +92,8 @@ export default function App() {
   };
 
   const handleSaveConfig = async () => {
+    setIsBusy(true);
+
     setSavingConfig(true);
 
     try {
@@ -92,6 +104,8 @@ export default function App() {
     } finally {
       setSavingConfig(false);
     }
+
+    setIsBusy(false);
   };
 
   const availableMatches = Object.values(matches).filter(
@@ -166,9 +180,7 @@ export default function App() {
           <button
             className="button"
             onClick={() => {
-              setIsBusy(true);
               handleSaveConfig();
-              setIsBusy(false);
             }}
             disabled={savingConfig || !tokenInput.trim() || !slugInput.trim()}
           >
@@ -182,31 +194,10 @@ export default function App() {
   return (
     <main className="app-shell">
       {isBusy && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0, 0, 0, 0.4)",
-            zIndex: 9999,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            pointerEvents: "all",
-          }}
-        >
-          <div
-            style={{
-              background: "#111",
-              color: "#fff",
-              padding: "16px 24px",
-              borderRadius: 8,
-              fontSize: 16,
-            }}
-          >
-            Processing...
+        <div className="busy-overlay">
+          <div className="busy-card">
+            <span className="busy-spinner" />
+            <span>Processing...</span>
           </div>
         </div>
       )}
@@ -255,15 +246,8 @@ export default function App() {
           </select>
 
           <div className="queue-list">
-            {availableMatches.length === 0 && (
-              <div className="empty-state">
-                <div>
-                  <div className="empty-icon">✓</div>
-                  <h3>No available matches</h3>
-                  <p>Unassigned active matches will show up here.</p>
-                </div>
-              </div>
-            )}
+            {availableMatches.length === 0 &&
+              emptyStreamControlMatchComponent()}
 
             {availableMatches.map((match) => (
               <article className="match-card" key={match.id}>
@@ -328,17 +312,7 @@ export default function App() {
             </button>
           </div>
 
-          {!currentMatch && (
-            <div className="empty-state">
-              <div>
-                <div className="empty-icon">↗</div>
-                <h3>No match assigned</h3>
-                <p>
-                  Assign a set from the queue to begin controlling this stream.
-                </p>
-              </div>
-            </div>
-          )}
+          {!currentMatch && emptyStreamControlMatchComponent()}
 
           {currentMatch && (
             <div className="control-stack">
