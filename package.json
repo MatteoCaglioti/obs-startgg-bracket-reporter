@@ -1,6 +1,5 @@
 {
   "name": "obs-startgg-bracket-reporter",
-  "version": "1.0.0",
   "main": "electron/main.js",
   "scripts": {
     "dev:api": "cd api &&  npm run start",
