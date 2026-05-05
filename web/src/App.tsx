@@ -36,8 +36,11 @@ export default function App() {
   const [activeStreamId, setActiveStreamId] = useState(
     selectedStream || streams[0]?.id || "",
   );
+  const [isBusy, setIsBusy] = useState(false);
 
   const refreshFromStartGG = async () => {
+    setIsBusy(true);
+
     const result = await refreshStartGG();
 
     const nextMatches = result.matchesData ?? result.matches;
@@ -62,9 +65,11 @@ export default function App() {
         setCurrentMatch(matchForSelectedStream);
       }
     }
+    setIsBusy(false);
   };
 
   const unassignStreamMatch = async () => {
+    setIsBusy(true);
     const updatedMatch = await unassignMatch(currentMatch?.id || "");
 
     setMatches((prev) => ({
@@ -73,6 +78,7 @@ export default function App() {
     }));
 
     setCurrentMatch(null);
+    setIsBusy(false);
   };
 
   const handleSaveConfig = async () => {
@@ -160,7 +166,9 @@ export default function App() {
           <button
             className="button"
             onClick={() => {
+              setIsBusy(true);
               handleSaveConfig();
+              setIsBusy(false);
             }}
             disabled={savingConfig || !tokenInput.trim() || !slugInput.trim()}
           >
@@ -173,6 +181,35 @@ export default function App() {
 
   return (
     <main className="app-shell">
+      {isBusy && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0, 0, 0, 0.4)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "all",
+          }}
+        >
+          <div
+            style={{
+              background: "#111",
+              color: "#fff",
+              padding: "16px 24px",
+              borderRadius: 8,
+              fontSize: 16,
+            }}
+          >
+            Processing...
+          </div>
+        </div>
+      )}
       <section className="hero compact-hero">
         <div>
           <p className="eyebrow">Tournament operations</p>
@@ -184,7 +221,9 @@ export default function App() {
         </div>
         <button
           className="button secondary"
-          onClick={() => refreshFromStartGG()}
+          onClick={() => {
+            refreshFromStartGG();
+          }}
         >
           Refresh from start.gg
         </button>
@@ -249,6 +288,7 @@ export default function App() {
                     currentMatch?.status === "saved"
                   }
                   onClick={async () => {
+                    setIsBusy(true);
                     const updatedMatch = await assignMatch(
                       match.id,
                       activeStreamId,
@@ -260,6 +300,7 @@ export default function App() {
                     }));
 
                     setCurrentMatch(updatedMatch);
+                    setIsBusy(false);
                   }}
                 >
                   Assign
@@ -279,7 +320,9 @@ export default function App() {
             <button
               className="button ghost"
               disabled={!currentMatch}
-              onClick={() => unassignStreamMatch()}
+              onClick={() => {
+                unassignStreamMatch();
+              }}
             >
               Unassign Stream
             </button>
@@ -435,6 +478,7 @@ export default function App() {
                   className="button"
                   disabled={currentMatch.status !== "assigned"}
                   onClick={async () => {
+                    setIsBusy(true);
                     const updatedMatch = await startMatch(currentMatch.id);
 
                     setMatches((prev) => ({
@@ -443,6 +487,7 @@ export default function App() {
                     }));
 
                     setCurrentMatch(updatedMatch);
+                    setIsBusy(false);
                   }}
                 >
                   Start Match
@@ -452,6 +497,7 @@ export default function App() {
                   className="button secondary"
                   disabled={!currentMatch || currentMatch.status === "assigned"}
                   onClick={async () => {
+                    setIsBusy(true);
                     const updatedMatch = await saveResult(currentMatch.id);
 
                     setMatches((prev) => ({
@@ -460,6 +506,7 @@ export default function App() {
                     }));
 
                     setCurrentMatch(updatedMatch);
+                    setIsBusy(false);
                   }}
                 >
                   Save Result
@@ -478,6 +525,7 @@ export default function App() {
                     );
 
                     if (!confirmed) return;
+                    setIsBusy(true);
 
                     const updatedMatch = await submitFinalResult(
                       currentMatch.id,
@@ -490,6 +538,7 @@ export default function App() {
 
                     setCurrentMatch(updatedMatch);
                     unassignStreamMatch();
+                    setIsBusy(false);
                   }}
                 >
                   Submit Final Result
