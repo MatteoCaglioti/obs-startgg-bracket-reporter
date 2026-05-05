@@ -14,6 +14,7 @@
   "build": {
     "appId": "com.obsstartgg.bracketreporter",
     "productName": "OBS StartGG Bracket Reporter",
+    "icon": "",
     "directories": {
       "output": "release"
     },
@@ -25,7 +26,8 @@
       "web/dist/**/*"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "assets/app_icon.ico"
     },
     "nsis": {
       "oneClick": false,
