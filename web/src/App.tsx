@@ -62,7 +62,6 @@ export default function App() {
       );
 
       if (matchForSelectedStream) {
-        console.log(matchForSelectedStream);
         setCurrentMatch(matchForSelectedStream);
       }
     }
