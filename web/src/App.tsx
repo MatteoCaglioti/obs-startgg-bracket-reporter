@@ -538,6 +538,7 @@ export default function App() {
 
                     setCurrentMatch(updatedMatch);
                     unassignStreamMatch();
+                    refreshFromStartGG();
                     setIsBusy(false);
                   }}
                 >

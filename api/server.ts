@@ -375,6 +375,8 @@ app.post("/refresh", async (req, res) => {
     res.json({
       success: true,
       ...result,
+      matchesData: store.getState(),
+      streamsData: result.streamsData,
     });
   } catch (err: any) {
     log(`Refresh failed: ${err.response ?? err}`);

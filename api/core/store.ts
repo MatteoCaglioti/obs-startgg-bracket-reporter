@@ -26,7 +26,7 @@ class Store {
   }
 
   mergeFromStartGG(freshMatches: Match[]) {
-    const nextState = { ...this.state };
+    const nextState: Record<string, Match> = {};
 
     for (const fresh of freshMatches) {
       nextState[fresh.id] = fresh;
