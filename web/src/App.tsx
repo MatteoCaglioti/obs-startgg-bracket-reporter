@@ -354,10 +354,6 @@ export default function App() {
                           );
 
                           setCurrentMatch(updatedMatch);
-                          setMatches((prev) => ({
-                            ...prev,
-                            [updatedMatch.id]: updatedMatch,
-                          }));
                         }}
                         aria-label={`Decrease ${currentMatch.player1?.name ?? "TBD"} score`}
                       >
@@ -375,10 +371,6 @@ export default function App() {
                           );
 
                           setCurrentMatch(updatedMatch);
-                          setMatches((prev) => ({
-                            ...prev,
-                            [updatedMatch.id]: updatedMatch,
-                          }));
                         }}
                         aria-label={`Increase ${currentMatch.player1?.name ?? "TBD"} score`}
                       >
@@ -414,10 +406,6 @@ export default function App() {
                           );
 
                           setCurrentMatch(updatedMatch);
-                          setMatches((prev) => ({
-                            ...prev,
-                            [updatedMatch.id]: updatedMatch,
-                          }));
                         }}
                         aria-label={`Decrease ${currentMatch.player2?.name ?? "TBD"} score`}
                       >
@@ -435,10 +423,6 @@ export default function App() {
                           );
 
                           setCurrentMatch(updatedMatch);
-                          setMatches((prev) => ({
-                            ...prev,
-                            [updatedMatch.id]: updatedMatch,
-                          }));
                         }}
                         aria-label={`Increase ${currentMatch.player2?.name ?? "TBD"} score`}
                       >
@@ -459,11 +443,6 @@ export default function App() {
                     setIsBusy(true);
                     const updatedMatch = await startMatch(currentMatch.id);
 
-                    setMatches((prev) => ({
-                      ...prev,
-                      [updatedMatch.id]: updatedMatch,
-                    }));
-
                     setCurrentMatch(updatedMatch);
                     setIsBusy(false);
                   }}
@@ -477,11 +456,6 @@ export default function App() {
                   onClick={async () => {
                     setIsBusy(true);
                     const updatedMatch = await saveResult(currentMatch.id);
-
-                    setMatches((prev) => ({
-                      ...prev,
-                      [updatedMatch.id]: updatedMatch,
-                    }));
 
                     setCurrentMatch(updatedMatch);
                     setIsBusy(false);
@@ -508,11 +482,6 @@ export default function App() {
                     const updatedMatch = await submitFinalResult(
                       currentMatch.id,
                     );
-
-                    setMatches((prev) => ({
-                      ...prev,
-                      [updatedMatch.id]: updatedMatch,
-                    }));
 
                     setCurrentMatch(updatedMatch);
                     unassignStreamMatch();
