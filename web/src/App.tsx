@@ -36,7 +36,7 @@ export default function App() {
   const [activeStreamId, setActiveStreamId] = useState(
     selectedStream || streams[0]?.id || "",
   );
-  const [isBusy, setIsBusy] = useState(false);
+  const [isBusy, setIsBusy] = useState(true);
 
   const emptyStreamControlMatchComponent = () => {
     return (
