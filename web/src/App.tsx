@@ -73,18 +73,6 @@ export default function App() {
     try {
       await saveConfig(tokenInput, slugInput);
       setHasConfig(true);
-
-      const [matchesData, streamsData] = await Promise.all([
-        getMatches(),
-        getStreams(),
-      ]);
-
-      setMatches(matchesData);
-
-      const safeStreams = Array.isArray(streamsData) ? streamsData : [];
-
-      setStreams(safeStreams);
-      setSelectedStream(safeStreams[0]?.id ?? "");
     } catch {
       alert("Failed to save Start.gg config");
     } finally {
@@ -92,26 +80,6 @@ export default function App() {
     }
   }
 
-  useEffect(() => {
-    socket.on("STATE_SYNC", (data) => {
-      setMatches(data.matches);
-      setStreams(data.streams);
-
-      const matchesArray = Object.values(data.matches) as Match[];
-
-      const matchForSelectedStream =
-        matchesArray.find(
-          (match) =>
-            match.streamId === activeStreamId && match.status !== "complete",
-        ) ?? null;
-
-      setCurrentMatch(matchForSelectedStream);
-    });
-
-    return () => {
-      socket.off("STATE_SYNC");
-    };
-  }, [selectedStream]);
 
   // Subscribe to stream updates
   useEffect(() => {
@@ -207,7 +175,9 @@ export default function App() {
 
           <button
             className="button"
-            onClick={handleSaveConfig}
+            onClick={() => {
+              handleSaveConfig();
+            }}
             disabled={savingConfig || !tokenInput.trim() || !slugInput.trim()}
           >
             {savingConfig ? "Saving..." : "Save Token"}

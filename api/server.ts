@@ -74,21 +74,6 @@ app.post("/config", (req, res) => {
   });
 
   res.json({ ok: true });
-
-  setTimeout(() => {
-    refreshFromStartGG()
-      .then((result) => {
-        io.emit("STATE_SYNC", {
-          matches: store.getState(),
-          streams,
-        });
-
-        log(`Config saved and refreshed: ${JSON.stringify(result)}`);
-      })
-      .catch((err: any) => {
-        log(`Config saved, but refresh failed: ${err.response ?? err}`);
-      });
-  }, 100);
 });
 
 const isProd = (process as any).pkg || process.env.IS_PROD === "true";
@@ -109,33 +94,11 @@ const io = new Server(server, {
   },
 });
 
-io.on("connection", (socket) => {
-  socket.on("subscribe", ({ streamId }) => {
-    socket.join(streamId);
-  });
-
-  socket.on("unsubscribe", ({ streamId }) => {
-    socket.leave(streamId);
-  });
-});
-
-// ✅ STORE → SOCKET BRIDGE (THIS IS STEP 4)
-store.subscribe((state, event) => {
-  if (!("matchId" in event)) return;
-
-  const match = state[event.matchId];
-  if (!match?.streamId) return;
-
-  io.to(match.streamId).emit("MATCH_UPDATE", match);
-});
-
 async function bootstrap() {
   if (!getStartggApiKey() || !getTournamentSlug()) {
     log("Start.gg token or tournament slug missing. Skipping initial refresh.");
     return;
   }
-
-  await refreshFromStartGG();
 }
 
 async function refreshFromStartGG() {
@@ -247,8 +210,6 @@ app.post("/unassign", async (req, res) => {
     });
 
     const updatedMatch = store.getState()[matchId];
-
-    io.emit("MATCH_UPDATE", updatedMatch);
 
     return res.json(updatedMatch);
   } catch (err: any) {
@@ -410,11 +371,6 @@ app.post("/submitFinal", async (req, res) => {
 app.post("/refresh", async (req, res) => {
   try {
     const result = await refreshFromStartGG();
-
-    io.emit("STATE_SYNC", {
-      matches: store.getState(),
-      streams,
-    });
 
     res.json({
       success: true,
