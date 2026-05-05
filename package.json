@@ -1,0 +1,45 @@
+{
+  "name": "obs-startgg-bracket-reporter",
+  "version": "1.0.0",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev:api": "cd api &&  npm run start",
+    "dev:web": "cd web && npm run dev",
+    "install:all": "npm ci && cd api && npm ci && cd ../web && npm ci",
+    "build:web": "cd web && npm run build",
+    "build:api": "cd api && npm run build",
+    "build": "npm run build:web && npm run build:api",
+    "dist": "npm run install:all && npm run build && electron-builder --win --x64 --publish never"
+  },
+  "build": {
+    "appId": "com.obsstartgg.bracketreporter",
+    "productName": "OBS StartGG Bracket Reporter",
+    "icon": "",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "api/dist/**/*",
+      "api/package.json",
+      "api/node_modules/**/*",
+      "web/dist/**/*"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/app_icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "asarUnpack": [
+      "api/dist/**/*",
+      "api/node_modules/**/*"
+    ]
+  },
+  "devDependencies": {
+    "electron": "^36.9.5",
+    "electron-builder": "^26.8.1"
+  }
+}
