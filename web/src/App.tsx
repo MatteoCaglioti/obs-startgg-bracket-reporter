@@ -50,45 +50,57 @@ export default function App() {
 
   const refreshFromStartGG = async () => {
     setIsBusy(true);
+    try {
+      const result = await refreshStartGG();
+      const nextMatches = result.matchesData ?? result.matches;
+      const nextStreams = result.streamsData ?? result.streams;
 
-    const result = await refreshStartGG();
+      if (Array.isArray(nextStreams)) {
+        setStreams(nextStreams);
+      }
 
-    const nextMatches = result.matchesData ?? result.matches;
-    const nextStreams = result.streamsData ?? result.streams;
+      if (nextMatches) {
+        setMatches(nextMatches);
 
-    if (Array.isArray(nextStreams)) {
-      setStreams(nextStreams);
-    }
+        const matchesArray = Object.values(nextMatches) as Match[];
 
-    if (nextMatches) {
-      setMatches(nextMatches);
+        const matchForSelectedStream =
+          matchesArray.find((match) => match.streamId) ?? null;
+        setActiveStreamId(
+          matchForSelectedStream?.streamId || nextStreams?.[0]?.id || "",
+        );
 
-      const matchesArray = Object.values(nextMatches) as Match[];
-
-      const matchForSelectedStream =
-        matchesArray.find((match) => match.streamId) ?? null;
-      setActiveStreamId(
-        matchForSelectedStream?.streamId || nextStreams?.[0]?.id || "",
-      );
-
-      if (matchForSelectedStream) {
         setCurrentMatch(matchForSelectedStream);
       }
+    } catch (error) {
+      console.error("Error refreshing start gg data:", error);
+      alert("Error refreshing start gg data, restart app if issues persist");
     }
+
     setIsBusy(false);
   };
 
-  const unassignStreamMatch = async () => {
+  const unassignStreamMatch = async (changeBusyState: boolean = true) => {
     setIsBusy(true);
-    const updatedMatch = await unassignMatch(currentMatch?.id || "");
 
-    setMatches((prev) => ({
-      ...prev,
-      [updatedMatch.id]: updatedMatch,
-    }));
+    try {
+      const updatedMatch = await unassignMatch(currentMatch?.id || "");
 
-    setCurrentMatch(null);
-    setIsBusy(false);
+      setMatches((prev) => ({
+        ...prev,
+        [updatedMatch.id]: updatedMatch,
+      }));
+
+      setCurrentMatch(null);
+    } catch (error) {
+      console.error("Error unassigning stream match:", error);
+      alert("Error unassigning stream match, restart app if issues persist");
+    }
+
+    if (changeBusyState) {
+      setIsBusy(false);
+    }
+
   };
 
   const handleSaveConfig = async () => {
@@ -124,12 +136,8 @@ export default function App() {
   useEffect(() => {
     // initial load of startgg data
     const refreshData = async () => {
-      try {
-        if (hasConfig) {
-          refreshFromStartGG();
-        }
-      } catch (error) {
-        console.error("Error fetching initial start gg data:", error);
+      if (hasConfig) {
+        refreshFromStartGG();
       }
     };
 
@@ -276,18 +284,26 @@ export default function App() {
                   onClick={async () => {
                     setIsBusy(true);
 
-                    const updatedMatch = await assignMatch(
-                      match.id,
-                      activeStreamId,
-                    );
+                    try {
+                      const updatedMatch = await assignMatch(
+                        match.id,
+                        activeStreamId,
+                      );
 
-                    setMatches((prev) => {
-                      const rest = { ...prev };
-                      delete rest[updatedMatch.id];
-                      return rest;
-                    });
+                      setMatches((prev) => {
+                        const rest = { ...prev };
+                        delete rest[updatedMatch.id];
+                        return rest;
+                      });
 
-                    setCurrentMatch(updatedMatch);
+                      setCurrentMatch(updatedMatch);
+                    } catch (error) {
+                      console.error("Error assigning stream match:", error);
+                      alert(
+                        "Error assigning stream match, restart app if issues persist",
+                      );
+                    }
+
                     setIsBusy(false);
                   }}
                 >
@@ -441,9 +457,17 @@ export default function App() {
                   disabled={currentMatch.status !== "assigned"}
                   onClick={async () => {
                     setIsBusy(true);
-                    const updatedMatch = await startMatch(currentMatch.id);
 
-                    setCurrentMatch(updatedMatch);
+                    try {
+                      const updatedMatch = await startMatch(currentMatch.id);
+                      setCurrentMatch(updatedMatch);
+                    } catch (error) {
+                      console.error("Error starting stream match:", error);
+                      alert(
+                        "Error starting stream match, restart app if issues persist",
+                      );
+                    }
+
                     setIsBusy(false);
                   }}
                 >
@@ -455,9 +479,17 @@ export default function App() {
                   disabled={!currentMatch || currentMatch.status === "assigned"}
                   onClick={async () => {
                     setIsBusy(true);
-                    const updatedMatch = await saveResult(currentMatch.id);
 
-                    setCurrentMatch(updatedMatch);
+                    try {
+                      const updatedMatch = await saveResult(currentMatch.id);
+                      setCurrentMatch(updatedMatch);
+                    } catch (error) {
+                      console.error("Error saving stream match result:", error);
+                      alert(
+                        "Error saving stream match result, restart app if issues persist",
+                      );
+                    }
+
                     setIsBusy(false);
                   }}
                 >
@@ -479,12 +511,21 @@ export default function App() {
                     if (!confirmed) return;
                     setIsBusy(true);
 
-                    const updatedMatch = await submitFinalResult(
-                      currentMatch.id,
-                    );
+                    try {
+                      const updatedMatch = await submitFinalResult(
+                        currentMatch.id,
+                      );
 
-                    setCurrentMatch(updatedMatch);
-                    unassignStreamMatch();
+                      setCurrentMatch(updatedMatch);
+                    } catch (error) {
+                      console.error("Error Submitting stream match result:", error);
+                      alert(
+                        "Error Submitting stream match result, restart app if issues persist",
+                      );
+                    }
+
+                    unassignStreamMatch(false);
+                    setIsBusy(true);
                     refreshFromStartGG();
                     setIsBusy(false);
                   }}
