@@ -36,16 +36,37 @@ export default function App() {
   const [tokenInput, setTokenInput] = useState("");
   const [savingConfig, setSavingConfig] = useState(false);
   const [slugInput, setSlugInput] = useState("");
+  const [activeStreamId, setActiveStreamId] = useState(
+    selectedStream || streams[0]?.id || "",
+  );
 
-  const activeStreamId = selectedStream || streams[0]?.id || "";
+  const refreshFromStartGG = async () => {
+    const result = await refreshStartGG();
 
-  useEffect(() => {
-    getConfig()
-      .then((data) =>
-        setHasConfig(data.hasStartggToken && data.hasTournamentSlug),
-      )
-      .catch(() => setHasConfig(false));
-  }, []);
+    const nextMatches = result.matchesData ?? result.matches;
+    const nextStreams = result.streamsData ?? result.streams;
+
+    if (Array.isArray(nextStreams)) {
+      setStreams(nextStreams);
+    }
+
+    if (nextMatches) {
+      setMatches(nextMatches);
+
+      const matchesArray = Object.values(nextMatches) as Match[];
+
+      const matchForSelectedStream =
+        matchesArray.find((match) => match.streamId) ?? null;
+      setActiveStreamId(
+        matchForSelectedStream?.streamId || nextStreams?.[0]?.id || "",
+      );
+
+      if (matchForSelectedStream) {
+        console.log(matchForSelectedStream);
+        setCurrentMatch(matchForSelectedStream);
+      }
+    }
+  };
 
   async function handleSaveConfig() {
     setSavingConfig(true);
@@ -60,8 +81,11 @@ export default function App() {
       ]);
 
       setMatches(matchesData);
-      setStreams(streamsData);
-      setSelectedStream(streamsData[0]?.id ?? "");
+
+      const safeStreams = Array.isArray(streamsData) ? streamsData : [];
+
+      setStreams(safeStreams);
+      setSelectedStream(safeStreams[0]?.id ?? "");
     } catch {
       alert("Failed to save Start.gg config");
     } finally {
@@ -90,11 +114,6 @@ export default function App() {
     };
   }, [selectedStream]);
 
-  // Load matches initially
-  useEffect(() => {
-    getMatches().then(setMatches);
-  }, []);
-
   // Subscribe to stream updates
   useEffect(() => {
     socket.emit("subscribe", { streamId: "stream-1" });
@@ -119,15 +138,32 @@ export default function App() {
   }, [activeStreamId]);
 
   const availableMatches = Object.values(matches).filter(
-    (m) => !m.streamId && m.status !== "complete",
+    (m) =>
+      m && m.player1 && m.player2 && !m.streamId && m.status !== "complete",
   );
 
   useEffect(() => {
-    getStreams().then((data) => {
-      setStreams(data);
-      setSelectedStream(data[0]?.id ?? "");
-    });
+    getConfig()
+      .then((data) => {
+        setHasConfig(data.hasStartggToken && data.hasTournamentSlug);
+      })
+      .catch(() => setHasConfig(false));
   }, []);
+
+  useEffect(() => {
+    // initial load of startgg data
+    const refreshData = async () => {
+      try {
+        if (hasConfig) {
+          refreshFromStartGG();
+        }
+      } catch (error) {
+        console.error("Error fetching initial start gg data:", error);
+      }
+    };
+
+    refreshData();
+  }, [hasConfig]);
 
   const selectedStreamName =
     streams?.find((stream) => stream.id === activeStreamId)?.name ||
@@ -193,7 +229,10 @@ export default function App() {
             interface.
           </p>
         </div>
-        <button className="button secondary" onClick={refreshStartGG}>
+        <button
+          className="button secondary"
+          onClick={() => refreshFromStartGG()}
+        >
           Refresh from start.gg
         </button>
       </section>
@@ -240,9 +279,9 @@ export default function App() {
                   <div>
                     <span className="pill">{getStatusLabel(match.status)}</span>
                     <h3>
-                      {match.player1.name}{" "}
+                      {match.player1?.name ?? "TBD"}{" "}
                       <span className="muted-text">vs</span>{" "}
-                      {match.player2.name}
+                      {match.player2?.name ?? "TBD"}
                     </h3>
                     <p>{match.round}</p>
                   </div>
@@ -334,7 +373,7 @@ export default function App() {
                         : ""
                     }`}
                   >
-                    <span>{currentMatch.player1.name}</span>
+                    <span>{currentMatch.player1?.name ?? "TBD"}</span>
                     <strong>{currentMatch.score1}</strong>
 
                     <div className="score-stepper">
@@ -357,7 +396,7 @@ export default function App() {
                             [updatedMatch.id]: updatedMatch,
                           }));
                         }}
-                        aria-label={`Decrease ${currentMatch.player1.name} score`}
+                        aria-label={`Decrease ${currentMatch.player1?.name ?? "TBD"} score`}
                       >
                         −
                       </button>
@@ -378,7 +417,7 @@ export default function App() {
                             [updatedMatch.id]: updatedMatch,
                           }));
                         }}
-                        aria-label={`Increase ${currentMatch.player1.name} score`}
+                        aria-label={`Increase ${currentMatch.player1?.name ?? "TBD"} score`}
                       >
                         +
                       </button>
@@ -394,7 +433,7 @@ export default function App() {
                         : ""
                     }`}
                   >
-                    <span>{currentMatch.player2.name}</span>
+                    <span>{currentMatch.player2?.name ?? "TBD"}</span>
                     <strong>{currentMatch.score2}</strong>
 
                     <div className="score-stepper">
@@ -417,7 +456,7 @@ export default function App() {
                             [updatedMatch.id]: updatedMatch,
                           }));
                         }}
-                        aria-label={`Decrease ${currentMatch.player2.name} score`}
+                        aria-label={`Decrease ${currentMatch.player2?.name ?? "TBD"} score`}
                       >
                         −
                       </button>
@@ -438,7 +477,7 @@ export default function App() {
                             [updatedMatch.id]: updatedMatch,
                           }));
                         }}
-                        aria-label={`Increase ${currentMatch.player2.name} score`}
+                        aria-label={`Increase ${currentMatch.player2?.name ?? "TBD"} score`}
                       >
                         +
                       </button>

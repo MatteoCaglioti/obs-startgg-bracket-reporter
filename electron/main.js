@@ -1,5 +1,28 @@
 const { app, BrowserWindow } = require("electron");
 const path = require("path");
+const http = require("http");
+
+function waitForServer(url, retries = 50) {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+
+    const check = () => {
+      http
+        .get(url, () => resolve())
+        .on("error", () => {
+          attempts++;
+
+          if (attempts >= retries) {
+            reject(new Error("Server did not start"));
+          } else {
+            setTimeout(check, 200);
+          }
+        });
+    };
+
+    check();
+  });
+}
 
 function startServer() {
   process.env.IS_PROD = app.isPackaged ? "true" : "false";
@@ -19,13 +42,24 @@ function createWindow() {
   });
 
   if (app.isPackaged) {
-    win.loadFile(path.join(process.resourcesPath, "app.asar", "web", "dist", "index.html"));
+    win.loadFile(
+      path.join(process.resourcesPath, "app.asar", "web", "dist", "index.html"),
+    );
   } else {
     win.loadURL("http://localhost:5173");
   }
+
+  win.webContents.openDevTools();
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   startServer();
+
+  await waitForServer("http://localhost:3001/config");
+
   createWindow();
+});
+
+app.on("window-all-closed", () => {
+  app.quit();
 });
