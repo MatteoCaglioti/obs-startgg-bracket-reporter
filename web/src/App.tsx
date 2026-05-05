@@ -253,7 +253,9 @@ export default function App() {
               <article className="match-card" key={match.id}>
                 <div className="match-card-main">
                   <div>
-                    <span className="pill">{getStatusLabel(match.status)}</span>
+                    <span className={`pill pill-${match.status}`}>
+                      {getStatusLabel(match.status)}
+                    </span>
                     <h3>
                       {match.player1?.name ?? "TBD"}{" "}
                       <span className="muted-text">vs</span>{" "}
@@ -273,15 +275,17 @@ export default function App() {
                   }
                   onClick={async () => {
                     setIsBusy(true);
+
                     const updatedMatch = await assignMatch(
                       match.id,
                       activeStreamId,
                     );
 
-                    setMatches((prev) => ({
-                      ...prev,
-                      [updatedMatch.id]: updatedMatch,
-                    }));
+                    setMatches((prev) => {
+                      const rest = { ...prev };
+                      delete rest[updatedMatch.id];
+                      return rest;
+                    });
 
                     setCurrentMatch(updatedMatch);
                     setIsBusy(false);
