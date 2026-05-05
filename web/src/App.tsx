@@ -48,6 +48,17 @@ export default function App() {
     );
   };
 
+  const loadingStateComponent = (text: string) => {
+    return (
+      <div className="busy-overlay">
+        <div className="busy-card">
+          <span className="busy-spinner" />
+          <span>{text}</span>
+        </div>
+      </div>
+    );
+  };
+
   const refreshFromStartGG = async () => {
     setIsBusy(true);
     try {
@@ -100,7 +111,6 @@ export default function App() {
     if (changeBusyState) {
       setIsBusy(false);
     }
-
   };
 
   const handleSaveConfig = async () => {
@@ -149,7 +159,7 @@ export default function App() {
     "Stream Control";
 
   if (hasConfig === null) {
-    return <main className="app-shell">Loading...</main>;
+    return loadingStateComponent("Loading...");
   }
 
   if (!hasConfig) {
@@ -201,14 +211,7 @@ export default function App() {
 
   return (
     <main className="app-shell">
-      {isBusy && (
-        <div className="busy-overlay">
-          <div className="busy-card">
-            <span className="busy-spinner" />
-            <span>Processing...</span>
-          </div>
-        </div>
-      )}
+      {isBusy && loadingStateComponent("Processing...")}
       <section className="hero compact-hero">
         <div>
           <p className="eyebrow">Tournament operations</p>
@@ -518,7 +521,10 @@ export default function App() {
 
                       setCurrentMatch(updatedMatch);
                     } catch (error) {
-                      console.error("Error Submitting stream match result:", error);
+                      console.error(
+                        "Error Submitting stream match result:",
+                        error,
+                      );
                       alert(
                         "Error Submitting stream match result, restart app if issues persist",
                       );
