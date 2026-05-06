@@ -9,8 +9,7 @@ body {
   background: transparent;
   overflow: hidden;
   font-family: 'Segoe UI', Arial, sans-serif;
-  width: 1920px;
-  height: 1080px;
+  /* OBS browser source sets the canvas dimensions — no fixed size needed here */
 }
 
 #overlay {
@@ -118,7 +117,10 @@ body {
   text-overflow: ellipsis;
 }
 
-.picks #panel-a .char-slot,
+/* This rule can never match — .picks is a child of #panel-a, not a parent.
+   Picks border is handled by #panel-a .picks .char-slot below. */
+/* .picks #panel-a .char-slot { border-color: #ff7a6d; } */
+
 #panel-a .picks .char-slot {
   border-color: #ff7a6d;
 }

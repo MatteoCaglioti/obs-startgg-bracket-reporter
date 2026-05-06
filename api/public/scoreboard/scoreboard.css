@@ -70,8 +70,7 @@ body {
 
 /* =============================================================================
    ② Player blocks — each is an independent flex row
-   Layout: P1 → [name panel /][score]    P2 → [score][\ name panel]
-   The parallelogram clip-path mirrors the SF3TS HUD health-bar panel shape.
+   Layout: P1 → [name panel][score]    P2 → [score][name panel]
    ============================================================================= */
 #p1-block,
 #p2-block {
