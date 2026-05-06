@@ -35,8 +35,8 @@ export function createStreamDeckRouter(io: Server) {
 
   // ── Score controls ────────────────────────────────────────────────────────
 
-  router.post("/p1/score/up", (req, res) => {
-    const { streamId } = req.body ?? {};
+  router.all("/p1/score/up", (req, res) => {
+    const { streamId } = { ...req.query, ...req.body };
     const match = findActiveMatch(streamId);
     if (!match) return res.status(404).json({ error: "No active match found" });
     if (match.status === "complete") return res.status(409).json({ error: "Match is complete" });
@@ -51,8 +51,8 @@ export function createStreamDeckRouter(io: Server) {
     return res.json(store.getState()[match.id]);
   });
 
-  router.post("/p1/score/down", (req, res) => {
-    const { streamId } = req.body ?? {};
+  router.all("/p1/score/down", (req, res) => {
+    const { streamId } = { ...req.query, ...req.body };
     const match = findActiveMatch(streamId);
     if (!match) return res.status(404).json({ error: "No active match found" });
     if (match.status === "complete") return res.status(409).json({ error: "Match is complete" });
@@ -67,8 +67,8 @@ export function createStreamDeckRouter(io: Server) {
     return res.json(store.getState()[match.id]);
   });
 
-  router.post("/p2/score/up", (req, res) => {
-    const { streamId } = req.body ?? {};
+  router.all("/p2/score/up", (req, res) => {
+    const { streamId } = { ...req.query, ...req.body };
     const match = findActiveMatch(streamId);
     if (!match) return res.status(404).json({ error: "No active match found" });
     if (match.status === "complete") return res.status(409).json({ error: "Match is complete" });
@@ -83,8 +83,8 @@ export function createStreamDeckRouter(io: Server) {
     return res.json(store.getState()[match.id]);
   });
 
-  router.post("/p2/score/down", (req, res) => {
-    const { streamId } = req.body ?? {};
+  router.all("/p2/score/down", (req, res) => {
+    const { streamId } = { ...req.query, ...req.body };
     const match = findActiveMatch(streamId);
     if (!match) return res.status(404).json({ error: "No active match found" });
     if (match.status === "complete") return res.status(409).json({ error: "Match is complete" });
@@ -101,31 +101,31 @@ export function createStreamDeckRouter(io: Server) {
 
   // ── Display controls ──────────────────────────────────────────────────────
 
-  router.post("/swap", (req, res) => {
-    const { streamId = "default" } = req.body ?? {};
+  router.all("/swap", (req, res) => {
+    const { streamId = "default" } = { ...req.query, ...req.body };
     const d = getDisplay(streamId);
     d.swapped = !d.swapped;
     emitDisplay();
     return res.json({ streamId, swapped: d.swapped });
   });
 
-  router.post("/scoreboard/show", (req, res) => {
-    const { streamId = "default" } = req.body ?? {};
+  router.all("/scoreboard/show", (req, res) => {
+    const { streamId = "default" } = { ...req.query, ...req.body };
     const d = getDisplay(streamId);
     d.visible = true;
     emitDisplay();
     return res.json({ streamId, visible: true });
   });
 
-  router.post("/scoreboard/hide", (req, res) => {
-    const { streamId = "default" } = req.body ?? {};
+  router.all("/scoreboard/hide", (req, res) => {
+    const { streamId = "default" } = { ...req.query, ...req.body };
     const d = getDisplay(streamId);
     d.visible = false;
     emitDisplay();
     return res.json({ streamId, visible: false });
   });
 
-  router.get("/display", (_req, res) => {
+  router.all("/display", (_req, res) => {
     return res.json(displayState);
   });
 

@@ -4,19 +4,26 @@
   padding: 0;
 }
 
+:root {
+  /* Height of the picks/bans section labels.
+     Used both to size the label and to clip portrait bottoms at exactly the same line. */
+  --label-height: 50px;
+}
+
 body {
-  background: transparent;
+  background: #222;
   overflow: hidden;
   font-family: 'Segoe UI', Arial, sans-serif;
 }
 
 #overlay {
   position: fixed;
+  top: 0;
   bottom: 0;
   left: 0;
   right: 0;
   display: flex;
-  align-items: flex-end;
+  align-items: stretch;
   justify-content: space-between;
   transition: opacity 0.4s ease;
 }
@@ -26,39 +33,33 @@ body {
   pointer-events: none;
 }
 
-/* ── Team panels ───────────────────────────────────────────────────────── */
+/* ── Team panels ────────────────────────────────────────────────────────── */
 
 .team-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 24px 48px 36px;
   max-width: 44%;
+  /* No panel-level background — gradient is only behind the section labels */
 }
 
-/* Left panel: gradient fades right (white→transparent) */
-#panel-a {
-  background: linear-gradient(to right, rgba(255,255,255,0.15), transparent);
-  align-items: flex-start;
-}
+#panel-a { align-items: flex-start; }
+#panel-b { align-items: flex-end; }
 
-/* Right panel: gradient fades left (white→transparent), content right-aligned */
-#panel-b {
-  background: linear-gradient(to left, rgba(255,255,255,0.15), transparent);
-  align-items: flex-end;
-}
+/* Spacer pushes picks+header to the bottom */
+.spacer { flex: 1; }
 
 /* ── Team header ────────────────────────────────────────────────────────── */
 
 .team-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 15px;
+  padding: 36px 48px 24px;
 }
 
 .team-name {
-  font-size: 28px;
+  font-size: 42px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -68,86 +69,191 @@ body {
 #panel-b .team-name { color: #29b6f6; }
 
 .first-pick-badge {
-  font-size: 11px;
+  font-size: 17px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
-  color: rgba(255,255,255,0.9);
-  background: rgba(255,255,255,0.18);
-  padding: 3px 8px;
-  border-radius: 4px;
+  letter-spacing: 2px;
+  color: #fff;
+  background: #1a1040;
+  border: 1px solid rgba(255,255,255,0.3);
+  padding: 5px 12px;
+  border-radius: 6px;
   white-space: nowrap;
 }
 
 .first-pick-badge.hidden { display: none; }
 
-/* ── Section labels ─────────────────────────────────────────────────────── */
-
-.section-label {
-  font-size: 26px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 4px;
-  color: rgba(255,255,255,0.55);
-  margin-top: 14px;
-  margin-bottom: 6px;
+.first-pick-badge.badge-reveal {
+  animation: confirmFlash 0.2s ease-out backwards;
 }
+
+/* ── Pick / ban sections ────────────────────────────────────────────────── */
+
+.pick-section,
+.ban-section {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Pre-size the ban section to the portrait height so the label never jumps
+   and always overlaps the portrait fade-out zone correctly.
+   188px = BAN_BASE.h in draft-overlay.js */
+.ban-section  { min-height: 188px; }
+
+/* Pick section only needs label height as a floor — picks appear last and grow upward. */
+.pick-section { min-height: var(--label-height); }
 
 /* ── Character slots ────────────────────────────────────────────────────── */
 
 .char-slots {
   display: flex;
+  /* Bottom-align all portraits so the tallest (outermost) sets the baseline */
   align-items: flex-end;
+  /* Hard-clip portraits at exactly the top of the section label */
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - var(--label-height)), transparent calc(100% - var(--label-height)));
+  mask-image: linear-gradient(to bottom, black calc(100% - var(--label-height)), transparent calc(100% - var(--label-height)));
 }
 
-/* Picks: large */
-.picks .char-slot {
-  width: 120px;
-  height: 150px;
-}
-
-/* Bans: smaller, washed out */
-.bans .char-slot {
-  width: 80px;
-  height: 100px;
-  filter: grayscale(1) brightness(0.45);
+/* Right panel: pack icons to the right edge */
+#panel-b .char-slots {
+  justify-content: flex-end;
 }
 
 .char-slot {
   border: none;
   background: none;
-  overflow: hidden;
+  /* Flex-centers image so wide portraits bleed symmetrically outside the capped slot width */
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  overflow: visible;
   position: relative;
   flex-shrink: 0;
-}
-
-/* Overlap: each icon slides under the previous */
-.char-slot + .char-slot {
-  margin-left: -22px;
-}
-
-/* Pop-in animation */
-.char-slot.filled {
-  animation: popIn 0.25s ease;
-}
-
-/* Panel B: reverse icon stacking so first pick is outermost (rightmost) */
-#panel-b .char-slots {
-  flex-direction: row-reverse;
+  /* height and max-width set proportionally by JS; margin-left set inline per-slot (includes per-character offsets) */
 }
 
 .char-slot img {
-  width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: top center;
+  width: auto;
+  flex-shrink: 0; /* don't let flex compress the image */
   display: block;
 }
 
-@keyframes popIn {
-  from { transform: scale(0.5); opacity: 0; }
-  to   { transform: scale(1);   opacity: 1; }
+/* Left panel portraits: horizontally mirrored */
+#panel-a .char-slot img {
+  transform: scaleX(-1);
 }
+
+
+.bans .char-slot {
+  filter: grayscale(1) brightness(0.45);
+}
+
+/* ── Character slot state ───────────────────────────────────────────────── */
+
+.char-slot.pending   { opacity: 0.65; }
+.char-slot.confirmed { opacity: 1; }
+
+/* Left panel: slide in from the right (toward center) */
+#panel-a .char-slot.pop-in-confirmed {
+  animation: slideInFromRight 0.4s ease-out both;
+}
+#panel-a .char-slot.pop-in-pending {
+  animation: slideInFromRightPending 0.4s ease-out both;
+}
+
+/* Right panel: slide in from the left (toward center) */
+#panel-b .char-slot.pop-in-confirmed {
+  animation: slideInFromLeft 0.4s ease-out both;
+}
+#panel-b .char-slot.pop-in-pending {
+  animation: slideInFromLeftPending 0.4s ease-out both;
+}
+
+/* Confirm flash: pending → confirmed.
+   Starts at 0.3 opacity, spikes brightness, then normalizes.
+   Uses filter:brightness so only the actual (non-transparent) pixels flash.
+   fill-mode:backwards applies the from keyframe before animation starts,
+   but no fill-mode:forwards so the filter reverts to normal CSS after animation
+   (lets .bans .char-slot grayscale re-apply cleanly). */
+.char-slot.confirm-flash {
+  animation: confirmFlash 0.2s ease-out backwards;
+}
+
+@keyframes slideInFromRight {
+  from { transform: translateX(25%); opacity: 0; }
+  to   { transform: translateX(0);   opacity: 1; }
+}
+
+@keyframes slideInFromLeft {
+  from { transform: translateX(-25%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes slideInFromRightPending {
+  from { transform: translateX(25%); opacity: 0; }
+  to   { transform: translateX(0);   opacity: 0.65; }
+}
+
+@keyframes slideInFromLeftPending {
+  from { transform: translateX(-25%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 0.65; }
+}
+
+@keyframes confirmFlash {
+  0%   { filter: contrast(0) brightness(2); }
+  100% { filter: contrast(1) brightness(1); }
+}
+
+/* Ban variant: keep grayscale throughout so the flash stays white-on-grey
+   and the normal dimmed grayscale state is restored cleanly at the end. */
+@keyframes confirmFlashBan {
+  0%   { filter: grayscale(1) contrast(0) brightness(2); }
+  100% { filter: grayscale(1) contrast(1) brightness(0.45); }
+}
+
+.bans .char-slot.confirm-flash {
+  animation-name: confirmFlashBan;
+}
+
+/* ── Section labels — overlaid on portrait bottoms, above all char-slots ── */
+
+.section-label {
+  position: absolute;
+  bottom: 0;
+  height: var(--label-height);
+  display: flex;
+  align-items: center;
+  font-size: 33px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: rgba(255,255,255,0.7);
+  padding: 0 40px;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* Gradient fades from the outer viewport edge inward.
+   Width is fixed in vw so it never changes as characters are drafted. */
+#panel-a .section-label {
+  left: 0;
+  background: linear-gradient(to right, rgba(30,30,30,0.8), transparent);
+}
+
+#panel-b .section-label {
+  right: 0;
+  background: linear-gradient(to left, rgba(30,30,30,0.8), transparent);
+  justify-content: flex-end;
+}
+
+/* Ban bar: 60% of the way to viewport center */
+.ban-section  .section-label { width: 30vw; }
+
+/* Pick bar: 80% of the way to viewport center */
+.pick-section .section-label { width: 40vw; }
 
 /* ── Center status ──────────────────────────────────────────────────────── */
 

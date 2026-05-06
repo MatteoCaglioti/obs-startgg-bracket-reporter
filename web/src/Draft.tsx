@@ -223,14 +223,29 @@ function CompletePhase({ state, onRestart }: { state: DraftState; onRestart: () 
 
 // ── Main Draft Component ─────────────────────────────────────────────────────
 
+/** How many consecutive actions the current team has from a given step in the order array. */
+function getTurnLength(order: number[], step: number, team: number): number {
+  let n = 0;
+  for (let i = step; i < order.length && order[i] === team; i++) n++;
+  return n;
+}
+
+/** Walk backwards to find where the current team's consecutive run started. */
+function getTurnStartStep(order: number[], step: number, team: number): number {
+  let s = step;
+  while (s > 0 && order[s - 1] === team) s--;
+  return s;
+}
+
 export default function Draft() {
   const [draft, setDraft] = useState<DraftState | null>(null);
-  const [selectedChar, setSelectedChar] = useState<string | null>(null);
+  const [selectedChars, setSelectedChars] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const socket = io(API_BASE, { transports: ["websocket", "polling"] });
-    socket.on("draft:update", (state: DraftState) => { setDraft(state); setSelectedChar(null); });
+    // Don't reset selectedChars on socket updates — staging is local until lock-in
+    socket.on("draft:update", (state: DraftState) => { setDraft(state); });
     socket.on("connect_error", () => setError("Cannot connect to server"));
     fetch(`${API_BASE}/draft`).then(r => r.json()).then(setDraft).catch(() => {});
     return () => { socket.disconnect(); };
@@ -241,43 +256,69 @@ export default function Draft() {
     catch (e: any) { setError(e.message); }
   }, []);
   const handleRpsWinner  = useCallback(async (w: 1 | 2) => { try { await draftPost("/rps-winner", { winner: w }); } catch (e: any) { setError(e.message); } }, []);
-  const handleBan        = useCallback(async (c: string) => { try { await draftPost("/ban", { codename: c }); } catch (e: any) { setError(e.message); } }, []);
-  const handlePickSelect = useCallback((c: string) => setSelectedChar(p => p === c ? null : c), []);
-  const handlePickConfirm = useCallback(async () => {
-    if (!selectedChar) return;
-    try { await draftPost("/pick", { codename: selectedChar }); setSelectedChar(null); }
-    catch (e: any) { setError(e.message); }
-  }, [selectedChar]);
-  const handleUndo    = useCallback(async () => { try { await draftPost("/undo");    setSelectedChar(null); } catch { } }, []);
-  const handleRedo    = useCallback(async () => { try { await draftPost("/redo");    setSelectedChar(null); } catch { } }, []);
-  const handleRestart = useCallback(async () => { try { await draftPost("/restart"); setSelectedChar(null); } catch { } }, []);
+
+  const handleToggleChar = useCallback((codename: string) => {
+    if (!draft) return;
+    // Replace current staged char; clicking the same char deselects
+    const newChars = selectedChars[0] === codename ? [] : [codename];
+    setSelectedChars(newChars);
+    if (draft.phase === "ban" || draft.phase === "pick") {
+      draftPost("/stage", { codenames: newChars, action: draft.phase }).catch(() => {});
+    }
+  }, [selectedChars, draft]);
+
+  const handleLockIn = useCallback(async () => {
+    if (selectedChars.length === 0 || !draft) return;
+    try {
+      await draftPost("/lock-in", { codenames: selectedChars });
+      setSelectedChars([]);
+    } catch (e: any) { setError(e.message); setSelectedChars([]); }
+  }, [selectedChars, draft]);
+
+  const handleUndo    = useCallback(async () => { try { await draftPost("/undo");    setSelectedChars([]); } catch { } }, []);
+  const handleRedo    = useCallback(async () => { try { await draftPost("/redo");    setSelectedChars([]); } catch { } }, []);
+  const handleRestart = useCallback(async () => { try { await draftPost("/restart"); setSelectedChars([]); } catch { } }, []);
 
   if (!draft) return <div className={styles.connecting}>Connecting…</div>;
 
   const { phase, ruleset } = draft;
 
-  if (phase === "idle")     return <div className={styles.root}><IdlePhase onStart={handleStart} error={error} /></div>;
-  if (phase === "rps")      return <div className={styles.root}><RpsPhase state={draft} onWinner={handleRpsWinner} /></div>;
-  if (phase === "complete") return <div className={styles.root}><CompletePhase state={draft} onRestart={handleRestart} /></div>;
-  if (!ruleset)             return null;
+  if (phase === "idle") return <div className={styles.root}><IdlePhase onStart={handleStart} error={error} /></div>;
+  if (phase === "rps")  return <div className={styles.root}><RpsPhase state={draft} onWinner={handleRpsWinner} /></div>;
+  if (!ruleset)         return null;
 
-  const { teamAName, teamBName, teamABans, teamBBans, teamAPicks, teamBPicks, currentTeam, canUndo, canRedo } = draft;
+  const { teamAName, teamBName, teamABans, teamBBans, teamAPicks, teamBPicks, currentTeam, currentStep, canUndo, canRedo } = draft;
   const allChars  = ruleset.characters;
   const allBanned = new Set([...teamABans, ...teamBBans]);
   const bansPerTeam = { a: 0, b: 0 };
   ruleset.banOrder.forEach(t => t === 0 ? bansPerTeam.a++ : bansPerTeam.b++);
 
-  const actingColor = currentTeam === 0 ? TEAM_A_COLOR : TEAM_B_COLOR;
-  const actingName  = currentTeam === 0 ? teamAName    : teamBName;
-  const prompt = phase === "ban"  ? `${actingName}: Ban a character`
-    : selectedChar                ? `${actingName}: Confirm your pick`
-    :                               `${actingName}: Pick a character`;
+  const order = phase === "ban" ? ruleset.banOrder : phase === "pick" ? ruleset.pickOrder : [];
+  const hasSelection = selectedChars.length > 0;
+
+  // Compute position within multi-char turns for the prompt (e.g. "ban 2 of 2")
+  const turnStart = (phase === "ban" || phase === "pick") && currentTeam !== null
+    ? getTurnStartStep(order, currentStep, currentTeam) : 0;
+  const totalTurnLength = (phase === "ban" || phase === "pick") && currentTeam !== null
+    ? getTurnLength(order, turnStart, currentTeam) : 0;
+  const turnPos   = currentStep - turnStart + 1;
+  const posLabel  = totalTurnLength > 1 ? ` (${turnPos} of ${totalTurnLength})` : "";
+
+  const actingColor = currentTeam === 0 ? TEAM_A_COLOR : currentTeam === 1 ? TEAM_B_COLOR : "#888";
+  const actingName  = currentTeam === 0 ? teamAName    : currentTeam === 1 ? teamBName    : "";
+  const prompt = phase === "complete"
+    ? "Draft complete"
+    : hasSelection
+      ? `${actingName}: Lock in ${selectedChars.map(cn => allChars.find(c => c.codename === cn)?.displayName).join(", ")}`
+      : phase === "ban"
+        ? `${actingName}: Select a ban${posLabel}`
+        : `${actingName}: Select a character${posLabel}`;
 
   function getCharState(codename: string): CharState {
-    if (allBanned.has(codename))       return "banned";
-    if (teamAPicks.includes(codename)) return "pickedA";
-    if (teamBPicks.includes(codename)) return "pickedB";
-    if (selectedChar === codename)     return "selected";
+    if (allBanned.has(codename))          return "banned";
+    if (teamAPicks.includes(codename))    return "pickedA";
+    if (teamBPicks.includes(codename))    return "pickedB";
+    if (selectedChars.includes(codename)) return "selected";
     return "normal";
   }
 
@@ -313,22 +354,23 @@ export default function Draft() {
                   const c = allChars.find(ch => ch.codename === codename);
                   if (!c) return null;
                   const cstate = getCharState(c.codename);
-                  const isClickable = cstate === "normal" || (phase === "pick" && cstate === "selected");
+                  const canSelect = cstate === "normal" || cstate === "selected";
+                  const isClickable = (phase === "ban" || phase === "pick") && canSelect;
                   return (
                     <OvalCard key={c.codename} char={c} state={cstate}
                       rowIndex={rowIndex}
                       maxRowIndex={codenames.length - 1}
-                      onClick={isClickable ? () => { if (phase === "ban") handleBan(c.codename); else handlePickSelect(c.codename); } : undefined}
+                      onClick={isClickable ? () => handleToggleChar(c.codename) : undefined}
                     />
                   );
                 })}
               </div>
             ))}
           </div>
-          {phase === "pick" && selectedChar && (
+          {hasSelection && (
             <div className={styles.confirmRow}>
-              <button onClick={handlePickConfirm} className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLarge}`}>
-                Lock in {allChars.find(c => c.codename === selectedChar)?.displayName}
+              <button onClick={handleLockIn} className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLarge}`}>
+                Lock in {selectedChars.map(cn => allChars.find(c => c.codename === cn)?.displayName).join(" + ")}
               </button>
             </div>
           )}
