@@ -4,7 +4,7 @@
    ============================================================================= */
 :root {
   /* ── Element positions (within the 1920×1080 OBS canvas) ───────────────── */
-  --match-top:    156px;         /* match info: distance from top              */
+  --match-top:    158px;         /* match info: distance from top              */
 
   --p1-top:       216px;         /* ~20% of 1080px                             */
   --p1-left:      0px;           /* P1 block: distance from left edge          */
@@ -62,7 +62,7 @@ body {
 
 #matchPill span {
   color: #fff;
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
