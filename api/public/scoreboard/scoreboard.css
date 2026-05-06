@@ -4,7 +4,7 @@
    ============================================================================= */
 :root {
   /* ── Element positions (within the 1920×1080 OBS canvas) ───────────────── */
-  --match-top:    0px;           /* match info: distance from top              */
+  --match-top:    156px;         /* match info: distance from top              */
 
   --p1-top:       216px;         /* ~20% of 1080px                             */
   --p1-left:      0px;           /* P1 block: distance from left edge          */
@@ -53,7 +53,7 @@ body {
 #matchPill {
   background: linear-gradient(to right, #8b2a75, #d00a69);
   border-radius: 10px;
-  padding: 5px 18px;
+  padding: 5px 34px;
   white-space: nowrap;
   transition: opacity 0.3s ease;
 }
