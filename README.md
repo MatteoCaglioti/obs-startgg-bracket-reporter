@@ -132,7 +132,7 @@ All Stream Deck endpoints accept **GET or POST**. Pass `streamId` as a query par
 | `/streamdeck/swap` | Toggle player side swap on scoreboard |
 | `/streamdeck/scoreboard/show` | Show scoreboard overlay |
 | `/streamdeck/scoreboard/hide` | Hide scoreboard overlay |
-| `/streamdeck/display` | Get current display state (GET only) |
+| `/streamdeck/display` | Get current display state |
 
 ### Draft Endpoints
 
@@ -190,7 +190,12 @@ The backend preserves local scores and status across start.gg refreshes. start.g
   "banOrder": [0, 1, 1, 0],      // 0 = team1, 1 = team2
   "pickOrder": [0, 1, 1, 0, 0, 1],
   "characters": [
-    { "codename": "Ryu", "displayName": "Ryu", "imagePath": "/assets/characters/sf3ts/Ryu.png" }
+    {
+      "codename": "Ryu",
+      "displayName": "Ryu",
+      "imagePath": "/assets/characters/sf3ts/Ryu.png",
+      "portraitOffset": 0   // optional; % of portrait height. negative = more overlap, positive = more gap
+    }
     // ...
   ]
 }
