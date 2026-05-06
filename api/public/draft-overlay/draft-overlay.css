@@ -26,27 +26,18 @@ body {
   pointer-events: none;
 }
 
-/* ── Team panels ───────────────────────────────────────────────────────── */
+/* ── Team panels ────────────────────────────────────────────────────────── */
 
 .team-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 24px 48px 36px;
   max-width: 44%;
+  /* No panel-level background — gradient is only behind the section labels */
 }
 
-/* Left panel: gradient fades right (white→transparent) */
-#panel-a {
-  background: linear-gradient(to right, rgba(255,255,255,0.15), transparent);
-  align-items: flex-start;
-}
-
-/* Right panel: gradient fades left (white→transparent), content right-aligned */
-#panel-b {
-  background: linear-gradient(to left, rgba(255,255,255,0.15), transparent);
-  align-items: flex-end;
-}
+#panel-a { align-items: flex-start; }
+#panel-b { align-items: flex-end; }
 
 /* ── Team header ────────────────────────────────────────────────────────── */
 
@@ -54,7 +45,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 14px;
+  padding: 24px 32px 16px;
 }
 
 .team-name {
@@ -81,72 +72,98 @@ body {
 
 .first-pick-badge.hidden { display: none; }
 
-/* ── Section labels ─────────────────────────────────────────────────────── */
+/* ── Pick / ban sections ────────────────────────────────────────────────── */
 
-.section-label {
-  font-size: 26px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 4px;
-  color: rgba(255,255,255,0.55);
-  margin-top: 14px;
-  margin-bottom: 6px;
+.pick-section,
+.ban-section {
+  position: relative;
+  /* Height driven entirely by char-slots content so the absolute label sits at portrait bottoms */
+  display: inline-flex;
+  flex-direction: column;
 }
 
 /* ── Character slots ────────────────────────────────────────────────────── */
 
 .char-slots {
   display: flex;
+  /* Bottom-align all portraits so the tallest (outermost) sets the baseline */
   align-items: flex-end;
 }
 
-/* Picks: large */
-.picks .char-slot {
-  width: 120px;
-  height: 150px;
-}
-
-/* Bans: smaller, washed out */
-.bans .char-slot {
-  width: 80px;
-  height: 100px;
-  filter: grayscale(1) brightness(0.45);
+/* Right panel: pack icons to the right edge */
+#panel-b .char-slots {
+  justify-content: flex-end;
 }
 
 .char-slot {
   border: none;
   background: none;
   overflow: hidden;
-  position: relative;
+  position: relative; /* needed for z-index */
   flex-shrink: 0;
+  /* width/height set by JS per-slot */
 }
 
-/* Overlap: each icon slides under the previous */
-.char-slot + .char-slot {
-  margin-left: -22px;
+/* Picks: overlap each subsequent icon leftward */
+.picks .char-slot + .char-slot {
+  margin-left: -48px;
 }
 
-/* Pop-in animation */
-.char-slot.filled {
-  animation: popIn 0.25s ease;
-}
-
-/* Panel B: reverse icon stacking so first pick is outermost (rightmost) */
-#panel-b .char-slots {
-  flex-direction: row-reverse;
+/* Bans: no overlap, small gap, uniform size */
+.bans .char-slot + .char-slot {
+  margin-left: 6px;
 }
 
 .char-slot img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   object-position: top center;
   display: block;
+}
+
+/* Bans: greyscale + dim */
+.bans .char-slot {
+  filter: grayscale(1) brightness(0.45);
+}
+
+/* Animation only fires when .filled is present — JS omits it for existing chars */
+.char-slot.filled {
+  animation: popIn 0.25s ease;
 }
 
 @keyframes popIn {
   from { transform: scale(0.5); opacity: 0; }
   to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ── Section labels — overlaid on portrait bottoms, above all char-slots ── */
+
+.section-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  font-size: 26px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: rgba(255,255,255,0.7);
+  padding: 6px 32px;
+  pointer-events: none;
+  /* Must exceed any char-slot z-index (JS sets max ~6) */
+  z-index: 100;
+}
+
+/* Gradient only under the label — fades from outer viewport edge inward */
+#panel-a .section-label {
+  background: linear-gradient(to right, rgba(255,255,255,0.18), transparent);
+  text-align: left;
+}
+
+#panel-b .section-label {
+  background: linear-gradient(to left, rgba(255,255,255,0.18), transparent);
+  text-align: right;
 }
 
 /* ── Center status ──────────────────────────────────────────────────────── */
