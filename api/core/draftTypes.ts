@@ -2,6 +2,9 @@ export interface DraftCharacter {
   codename: string;
   displayName: string;
   imagePath: string;
+  /** Optional horizontal offset as % of portrait height. Positive = more gap from
+   *  previously drafted character; negative = less gap / more overlap. Defaults to 0. */
+  portraitOffset?: number;
 }
 
 export interface DraftRuleset {

@@ -28,18 +28,6 @@ const knownChars = new Map([
 const PICK_BASE = { h: 263, maxWidthRatio: 1, overlap: -88 };
 const BAN_BASE  = { h: 150, maxWidthRatio: 1, overlap: -24 };
 
-// Per-character horizontal offset configuration.
-// Value is a percentage of the portrait height added to the base overlap margin for that character.
-// Positive = more gap between this character and the previously drafted one.
-// Negative = less gap (more overlap) between this character and the previously drafted one.
-// The "previously drafted" character is always the one drafted immediately before this one,
-// regardless of which team panel the portrait appears in.
-const PORTRAIT_OFFSETS = {
-  // Examples (uncomment and adjust as needed):
-  // 'hugo':  -15,   // Hugo sits 15% closer to the previous portrait
-  // 'q':      10,   // Q gets 10% extra gap
-};
-
 /**
  * Render character slots into a container.
  *
@@ -85,11 +73,11 @@ function renderSlots(container, chars, isRight, base, progressive = true) {
     // For panel-a, the gap between ordered[i] and ordered[i-1] belongs to ordered[i].
     // For panel-b (DOM reversed), the gap between ordered[i] and ordered[i-1] corresponds
     // to the "previously drafted" neighbor of ordered[i-1] in draft order, so we read the
-    // offset from ordered[i-1] instead — this makes PORTRAIT_OFFSETS symmetric across panels.
+    // offset from ordered[i-1] instead — this makes portraitOffset symmetric across panels.
     let marginLeft = '';
     if (i > 0) {
       const offsetChar = isRight ? ordered[i - 1] : ordered[i];
-      const offsetPct  = PORTRAIT_OFFSETS[offsetChar.codename] || 0;
+      const offsetPct  = offsetChar.portraitOffset || 0;
       const offsetPx   = Math.round(h * offsetPct / 100);
       marginLeft = `margin-left:${base.overlap + offsetPx}px;`;
     }
