@@ -244,12 +244,12 @@
 /* ── OvalCard — main character selection grid ─────────────────────────────── */
 
 :root {
-  --oval-w:         76px;
-  --oval-h:         94px;
-  --oval-rotate:    12deg;   /* clockwise tilt — matches SF3TS character select */
+  --oval-w:         104px;  /* wider than tall — matches SF3TS oval portrait shape */
+  --oval-h:         76px;
+  --oval-rotate:    12deg;
   --icon-gap:       8px;
   --col-gap:        14px;
-  --slant-per-row:  20px;    /* each row shifts this much left relative to the row above */
+  --slant-per-row:  20px;
 }
 
 .ovalCard {
