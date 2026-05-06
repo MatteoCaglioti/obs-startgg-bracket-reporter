@@ -27,6 +27,7 @@ class DraftStore {
       teamBPicks: [],
       currentStep: 0,
       currentTeam: null,
+      rpsWinner: null,
       ruleset: null,
       canUndo: false,
       canRedo: false,
@@ -88,6 +89,7 @@ class DraftStore {
       phase: "ban",
       teamAName,
       teamBName,
+      rpsWinner: winner,
       currentStep: 0,
       currentTeam: this.state.ruleset.banOrder[0] as 0 | 1,
     };

@@ -24,6 +24,7 @@ export interface DraftState {
   teamBPicks: string[];
   currentStep: number;
   currentTeam: 0 | 1 | null;
+  rpsWinner: 1 | 2 | null;
   ruleset: DraftRuleset | null;
   canUndo: boolean;
   canRedo: boolean;
