@@ -82,13 +82,8 @@ body {
 
 .first-pick-badge.hidden { display: none; }
 
-@keyframes badgeReveal {
-  0%   { opacity: 0; filter: brightness(4); transform: scale(1.25); }
-  100% { opacity: 1; filter: brightness(1); transform: scale(1); }
-}
-
 .first-pick-badge.badge-reveal {
-  animation: badgeReveal 0.5s ease-out both;
+  animation: confirmFlash 0.2s ease-out backwards;
 }
 
 /* ── Pick / ban sections ────────────────────────────────────────────────── */
