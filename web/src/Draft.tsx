@@ -223,11 +223,18 @@ function CompletePhase({ state, onRestart }: { state: DraftState; onRestart: () 
 
 // ── Main Draft Component ─────────────────────────────────────────────────────
 
-/** How many consecutive actions the current team has from currentStep in the order array. */
+/** How many consecutive actions the current team has from a given step in the order array. */
 function getTurnLength(order: number[], step: number, team: number): number {
   let n = 0;
   for (let i = step; i < order.length && order[i] === team; i++) n++;
   return n;
+}
+
+/** Walk backwards to find where the current team's consecutive run started. */
+function getTurnStartStep(order: number[], step: number, team: number): number {
+  let s = step;
+  while (s > 0 && order[s - 1] === team) s--;
+  return s;
 }
 
 export default function Draft() {
@@ -252,9 +259,8 @@ export default function Draft() {
 
   const handleToggleChar = useCallback((codename: string) => {
     if (!draft) return;
-    const newChars = selectedChars.includes(codename)
-      ? selectedChars.filter(x => x !== codename)
-      : [...selectedChars, codename];
+    // Replace current staged char; clicking the same char deselects
+    const newChars = selectedChars[0] === codename ? [] : [codename];
     setSelectedChars(newChars);
     if (draft.phase === "ban" || draft.phase === "pick") {
       draftPost("/stage", { codenames: newChars, action: draft.phase }).catch(() => {});
@@ -288,21 +294,25 @@ export default function Draft() {
   ruleset.banOrder.forEach(t => t === 0 ? bansPerTeam.a++ : bansPerTeam.b++);
 
   const order = phase === "ban" ? ruleset.banOrder : phase === "pick" ? ruleset.pickOrder : [];
-  const turnLength = (phase === "ban" || phase === "pick") && currentTeam !== null
-    ? getTurnLength(order, currentStep, currentTeam)
-    : 0;
-  const selectionFull = turnLength > 0 && selectedChars.length >= turnLength;
+  const hasSelection = selectedChars.length > 0;
+
+  // Compute position within multi-char turns for the prompt (e.g. "ban 2 of 2")
+  const turnStart = (phase === "ban" || phase === "pick") && currentTeam !== null
+    ? getTurnStartStep(order, currentStep, currentTeam) : 0;
+  const totalTurnLength = (phase === "ban" || phase === "pick") && currentTeam !== null
+    ? getTurnLength(order, turnStart, currentTeam) : 0;
+  const turnPos   = currentStep - turnStart + 1;
+  const posLabel  = totalTurnLength > 1 ? ` (${turnPos} of ${totalTurnLength})` : "";
 
   const actingColor = currentTeam === 0 ? TEAM_A_COLOR : currentTeam === 1 ? TEAM_B_COLOR : "#888";
   const actingName  = currentTeam === 0 ? teamAName    : currentTeam === 1 ? teamBName    : "";
-  const remaining   = turnLength - selectedChars.length;
   const prompt = phase === "complete"
     ? "Draft complete"
-    : selectionFull
-      ? `${actingName}: Lock in your selection`
+    : hasSelection
+      ? `${actingName}: Lock in ${selectedChars.map(cn => allChars.find(c => c.codename === cn)?.displayName).join(", ")}`
       : phase === "ban"
-        ? `${actingName}: Select ${remaining} ban${remaining !== 1 ? "s" : ""}`
-        : `${actingName}: Select ${remaining} character${remaining !== 1 ? "s" : ""}`;
+        ? `${actingName}: Select a ban${posLabel}`
+        : `${actingName}: Select a character${posLabel}`;
 
   function getCharState(codename: string): CharState {
     if (allBanned.has(codename))          return "banned";
@@ -344,7 +354,7 @@ export default function Draft() {
                   const c = allChars.find(ch => ch.codename === codename);
                   if (!c) return null;
                   const cstate = getCharState(c.codename);
-                  const canSelect = (cstate === "normal" && !selectionFull) || cstate === "selected";
+                  const canSelect = cstate === "normal" || cstate === "selected";
                   const isClickable = (phase === "ban" || phase === "pick") && canSelect;
                   return (
                     <OvalCard key={c.codename} char={c} state={cstate}
@@ -357,7 +367,7 @@ export default function Draft() {
               </div>
             ))}
           </div>
-          {selectionFull && (
+          {hasSelection && (
             <div className={styles.confirmRow}>
               <button onClick={handleLockIn} className={`${styles.btn} ${styles.btnPrimary} ${styles.btnLarge}`}>
                 Lock in {selectedChars.map(cn => allChars.find(c => c.codename === cn)?.displayName).join(" + ")}

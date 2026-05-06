@@ -168,7 +168,7 @@ body {
    but no fill-mode:forwards so the filter reverts to normal CSS after animation
    (lets .bans .char-slot grayscale re-apply cleanly). */
 .char-slot.confirm-flash {
-  animation: confirmFlash 0.5s ease-out backwards;
+  animation: confirmFlash 0.2s ease-out backwards;
 }
 
 @keyframes slideInFromRight {
@@ -192,9 +192,19 @@ body {
 }
 
 @keyframes confirmFlash {
-  0%   { opacity: 0.3; filter: brightness(1); }
-  20%  { opacity: 1;   filter: brightness(6); }
-  100% { opacity: 1;   filter: brightness(1); }
+  0%   { filter: contrast(0) brightness(2); }
+  100% { filter: contrast(1) brightness(1); }
+}
+
+/* Ban variant: keep grayscale throughout so the flash stays white-on-grey
+   and the normal dimmed grayscale state is restored cleanly at the end. */
+@keyframes confirmFlashBan {
+  0%   { filter: grayscale(1) contrast(0) brightness(2); }
+  100% { filter: grayscale(1) contrast(1) brightness(0.45); }
+}
+
+.bans .char-slot.confirm-flash {
+  animation-name: confirmFlashBan;
 }
 
 /* ── Section labels — overlaid on portrait bottoms, above all char-slots ── */

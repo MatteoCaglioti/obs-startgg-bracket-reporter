@@ -73,17 +73,21 @@ function renderSlots(container, confirmedChars, pendingChars, isRight, base, pro
     const maxW   = base.maxWidthRatio ? Math.round(h * base.maxWidthRatio) : '';
     const zIdx   = progressive ? (isRight ? (i + 1) : (n - i)) : 1;
 
-    let marginLeft = '';
+    let marginLeft  = '';
+    let marginRight = '';
     if (i > 0) {
       const offsetChar = isRight ? ordered[i - 1] : ordered[i];
       const offsetPct  = offsetChar.portraitOffset || 0;
       const offsetPx   = Math.round(h * offsetPct / 100);
-      marginLeft = `margin-left:${base.overlap + offsetPx}px;`;
+      marginLeft  = `margin-left:${base.overlap + offsetPx}px;`;
+      // Compensate on the opposite side so the portrait shifts visually
+      // without changing its layout footprint (effect on neighbors is unchanged).
+      if (offsetPx !== 0) marginRight = `margin-right:${-offsetPx}px;`;
     }
 
     const slot = document.createElement('div');
     slot.className = ['char-slot', newState, animClass].filter(Boolean).join(' ');
-    slot.style.cssText = `height:${h}px;z-index:${zIdx};${maxW ? `max-width:${maxW}px;` : ''}${marginLeft}`;
+    slot.style.cssText = `height:${h}px;z-index:${zIdx};${maxW ? `max-width:${maxW}px;` : ''}${marginLeft}${marginRight}`;
 
     const img = document.createElement('img');
     img.src = `${API_BASE}${char.imagePath}`;
