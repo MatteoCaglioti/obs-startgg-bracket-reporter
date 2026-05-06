@@ -53,7 +53,7 @@ body {
 #matchPill {
   background: linear-gradient(to right, #8b2a75, #d00a69);
   border-radius: 10px;
-  padding: 5px 34px;
+  padding: 5px 20px;
   white-space: nowrap;
   transition: opacity 0.3s ease;
 }
