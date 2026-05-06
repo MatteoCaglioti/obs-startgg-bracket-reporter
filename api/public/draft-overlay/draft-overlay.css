@@ -197,7 +197,7 @@ body {
 
 #panel-b .section-label {
   background: linear-gradient(to left, rgba(255,255,255,0.18), transparent);
-  text-align: right;
+  justify-content: flex-end;
 }
 
 /* ── Center status ──────────────────────────────────────────────────────── */
