@@ -118,11 +118,16 @@ body {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  object-position: top center;
+  object-position: bottom center;
   display: block;
 }
 
-/* Bans: greyscale + dim */
+/* Left panel portraits: horizontally mirrored */
+#panel-a .char-slot img {
+  transform: scaleX(-1);
+}
+
+
 .bans .char-slot {
   filter: grayscale(1) brightness(0.45);
 }
