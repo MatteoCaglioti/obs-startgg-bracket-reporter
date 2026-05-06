@@ -5,44 +5,39 @@
   <title>Scoreboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="scoreboard.css" />
 </head>
 <body>
   <div id="root" class="hidden">
-    <div id="scoreboard">
 
-      <!-- Left player panel -->
-      <div class="player-panel p1">
+    <!-- ① Match info — independently positioned -->
+    <div id="match-info">
+      <div id="matchPill"><span id="matchLabel"></span></div>
+    </div>
+
+    <!-- ② Player 1 block — independently positioned -->
+    <div id="p1-block">
+      <div class="name-panel p1">
         <div class="losers-badge" id="p1Losers">L</div>
         <div class="player-name" id="p1Name">Player 1</div>
       </div>
-
-      <!-- Left score -->
       <div class="score-box">
         <span class="score-val" id="p1Score">0</span>
       </div>
+    </div>
 
-      <!-- Center: round label hangs below bar -->
-      <div class="center-col">
-        <div class="center-bg"></div>
-        <div class="round-pill" id="matchPill">
-          <span id="matchLabel"></span>
-        </div>
-      </div>
-
-      <!-- Right score -->
+    <!-- ③ Player 2 block — independently positioned -->
+    <div id="p2-block">
       <div class="score-box">
         <span class="score-val" id="p2Score">0</span>
       </div>
-
-      <!-- Right player panel -->
-      <div class="player-panel p2">
+      <div class="name-panel p2">
         <div class="player-name" id="p2Name">Player 2</div>
         <div class="losers-badge" id="p2Losers">L</div>
       </div>
-
     </div>
+
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
