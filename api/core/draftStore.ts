@@ -198,8 +198,9 @@ class DraftStore {
     return true;
   }
 
-  restart() {
-    const { ruleset, pendingTeam1Name, pendingTeam2Name } = this.state;
+  restart(newRuleset?: DraftRuleset) {
+    const { ruleset: existingRuleset, pendingTeam1Name, pendingTeam2Name } = this.state;
+    const ruleset = newRuleset ?? existingRuleset;
     if (!ruleset) return;
     this.state = {
       ...this.initialState(),

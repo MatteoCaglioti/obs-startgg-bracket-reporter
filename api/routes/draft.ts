@@ -85,9 +85,14 @@ export function createDraftRouter(io: Server) {
     return res.json(draftStore.getState());
   });
 
-  // POST /draft/restart — back to rps phase, keeping team names
+  // POST /draft/restart — back to rps phase, keeping team names; reloads ruleset from disk
   router.post("/restart", (_req, res) => {
-    draftStore.restart();
+    try {
+      const ruleset = loadRuleset();
+      draftStore.restart(ruleset);
+    } catch {
+      draftStore.restart(); // fall back to existing ruleset if file unreadable
+    }
     return res.json(draftStore.getState());
   });
 
