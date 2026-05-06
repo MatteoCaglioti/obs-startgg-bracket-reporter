@@ -106,7 +106,7 @@ body {
 
 /* Picks: overlap each subsequent icon leftward */
 .picks .char-slot + .char-slot {
-  margin-left: -48px;
+  margin-left: -72px;
 }
 
 /* Bans: no overlap, small gap, uniform size */
