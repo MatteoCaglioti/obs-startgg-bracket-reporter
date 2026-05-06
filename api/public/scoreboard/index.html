@@ -2,53 +2,44 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=1920" />
   <title>Scoreboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="scoreboard.css" />
 </head>
 <body>
-  <div class="root hidden" id="root">
-    <div class="anim-outer" id="animOuter">
+  <div id="root" class="hidden">
+    <div id="scoreboard">
 
-      <!-- Center logo/brand zone -->
-      <div class="logo-zone">
-        <div class="logo-bg"></div>
-        <div class="match-pill" id="matchPill">
+      <!-- Left player panel -->
+      <div class="player-panel p1">
+        <div class="losers-badge" id="p1Losers">L</div>
+        <div class="player-name" id="p1Name">Player 1</div>
+      </div>
+
+      <!-- Left score -->
+      <div class="score-box">
+        <span class="score-val" id="p1Score">0</span>
+      </div>
+
+      <!-- Center: round label hangs below bar -->
+      <div class="center-col">
+        <div class="center-bg"></div>
+        <div class="round-pill" id="matchPill">
           <span id="matchLabel"></span>
         </div>
       </div>
 
-      <!-- Player 1 (left side) -->
-      <div class="player-bar p1" id="p1Bar">
-        <div class="losers-badge" id="p1Losers">[L]</div>
-        <div class="player-inner">
-          <div class="sponsor-bg" id="p1SponsorBg"></div>
-          <div class="flag" id="p1Flag"></div>
-          <div class="player-name" id="p1Name">Player 1</div>
-        </div>
+      <!-- Right score -->
+      <div class="score-box">
+        <span class="score-val" id="p2Score">0</span>
       </div>
 
-      <!-- Score 1 (left) -->
-      <div class="score-box p1" id="p1ScoreBox">
-        <span class="score-value" id="p1Score">0</span>
-      </div>
-
-      <!-- Score 2 (right) -->
-      <div class="score-box p2" id="p2ScoreBox">
-        <span class="score-value" id="p2Score">0</span>
-      </div>
-
-      <!-- Player 2 (right side) -->
-      <div class="player-bar p2" id="p2Bar">
-        <div class="losers-badge" id="p2Losers">[L]</div>
-        <div class="player-inner">
-          <div class="sponsor-bg" id="p2SponsorBg"></div>
-          <div class="flag" id="p2Flag"></div>
-          <div class="player-name" id="p2Name">Player 2</div>
-        </div>
+      <!-- Right player panel -->
+      <div class="player-panel p2">
+        <div class="player-name" id="p2Name">Player 2</div>
+        <div class="losers-badge" id="p2Losers">L</div>
       </div>
 
     </div>
