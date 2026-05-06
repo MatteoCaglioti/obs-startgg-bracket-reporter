@@ -22,8 +22,8 @@ const knownChars = new Map([
   [bansB,  new Map()],
 ]);
 
-const PICK_BASE = { h: 263, maxWidthRatio: 1, overlap: -88 };
-const BAN_BASE  = { h: 150, maxWidthRatio: 1, overlap: -24 };
+const PICK_BASE = { h: 329, maxWidthRatio: 1, overlap: -110 };
+const BAN_BASE  = { h: 188, maxWidthRatio: 1, overlap: -30 };
 
 /**
  * Render character slots into a container.

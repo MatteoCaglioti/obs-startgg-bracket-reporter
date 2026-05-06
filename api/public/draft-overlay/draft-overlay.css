@@ -7,7 +7,7 @@
 :root {
   /* Height of the picks/bans section labels.
      Used both to size the label and to clip portrait bottoms at exactly the same line. */
-  --label-height: 40px;
+  --label-height: 50px;
 }
 
 body {
@@ -54,12 +54,12 @@ body {
 .team-header {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 24px 32px 16px;
+  gap: 15px;
+  padding: 36px 48px 24px;
 }
 
 .team-name {
-  font-size: 28px;
+  font-size: 42px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -69,15 +69,15 @@ body {
 #panel-b .team-name { color: #29b6f6; }
 
 .first-pick-badge {
-  font-size: 11px;
+  font-size: 17px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   color: #fff;
   background: #1a1040;
   border: 1px solid rgba(255,255,255,0.3);
-  padding: 3px 8px;
-  border-radius: 4px;
+  padding: 5px 12px;
+  border-radius: 6px;
   white-space: nowrap;
 }
 
@@ -98,8 +98,8 @@ body {
 }
 
 /* Pre-size the ban section to its populated height so the label never jumps.
-   150px = BAN_BASE.h in draft-overlay.js */
-.ban-section  { min-height: calc(150px + var(--label-height)); }
+   188px = BAN_BASE.h in draft-overlay.js */
+.ban-section  { min-height: calc(188px + var(--label-height)); }
 
 /* Pick section only needs label height as a floor — picks appear last and grow upward. */
 .pick-section { min-height: var(--label-height); }
@@ -225,14 +225,13 @@ body {
   height: var(--label-height);
   display: flex;
   align-items: center;
-  font-size: 26px;
+  font-size: 33px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 4px;
   color: rgba(255,255,255,0.7);
-  padding: 0 32px;
+  padding: 0 40px;
   pointer-events: none;
-  /* Must exceed any char-slot z-index (JS sets max ~6) */
   z-index: 100;
 }
 
@@ -250,10 +249,10 @@ body {
 }
 
 /* Ban bar: 25% of the way to viewport center (center = 50vw from each edge) */
-.ban-section  .section-label { width: 12.5vw; }
+.ban-section  .section-label { width: 15.6vw; }
 
 /* Pick bar: 75% of the way to viewport center */
-.pick-section .section-label { width: 37.5vw; }
+.pick-section .section-label { width: 46.9vw; }
 
 /* ── Center status ──────────────────────────────────────────────────────── */
 
