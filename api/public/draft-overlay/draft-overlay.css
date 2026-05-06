@@ -73,8 +73,9 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: rgba(255,255,255,0.9);
-  background: rgba(255,255,255,0.18);
+  color: #fff;
+  background: #1a1040;
+  border: 1px solid rgba(255,255,255,0.3);
   padding: 3px 8px;
   border-radius: 4px;
   white-space: nowrap;
