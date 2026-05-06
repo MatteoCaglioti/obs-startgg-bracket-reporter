@@ -71,6 +71,16 @@ export function createDraftRouter(io: Server) {
     return res.json(draftStore.getState());
   });
 
+  // POST /draft/stage — update staged (pending) characters; body: { codenames: string[], action: 'ban'|'pick' }
+  router.post("/stage", (req, res) => {
+    const { codenames, action } = req.body ?? {};
+    if (!Array.isArray(codenames) || (action !== "ban" && action !== "pick")) {
+      return res.status(400).json({ error: "codenames (array) and action ('ban'|'pick') are required" });
+    }
+    draftStore.setStaging(codenames, action as "ban" | "pick");
+    return res.json({ ok: true });
+  });
+
   // POST /draft/undo
   router.post("/undo", (_req, res) => {
     const ok = draftStore.undo();

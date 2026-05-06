@@ -31,6 +31,7 @@ class DraftStore {
       ruleset: null,
       canUndo: false,
       canRedo: false,
+      staging: null,
     };
   }
 
@@ -60,6 +61,15 @@ class DraftStore {
 
   getState(): DraftState {
     return { ...this.state };
+  }
+
+  setStaging(codenames: string[], action: "ban" | "pick") {
+    if (this.state.phase !== action) return;
+    this.state = {
+      ...this.state,
+      staging: codenames.length > 0 ? { codenames, action } : null,
+    };
+    this.emit();
   }
 
   start(ruleset: DraftRuleset, team1Name: string, team2Name: string) {
@@ -124,6 +134,7 @@ class DraftStore {
         phase: "pick",
         currentStep: 0,
         currentTeam: pickOrder[0] as 0 | 1,
+        staging: null,
       };
     } else {
       this.state = {
@@ -132,6 +143,7 @@ class DraftStore {
         teamBBans: newTeamBBans,
         currentStep: nextStep,
         currentTeam: banOrder[nextStep] as 0 | 1,
+        staging: null,
       };
     }
 
@@ -165,6 +177,7 @@ class DraftStore {
         phase: "complete",
         currentStep: nextStep,
         currentTeam: null,
+        staging: null,
       };
     } else {
       this.state = {
@@ -173,6 +186,7 @@ class DraftStore {
         teamBPicks: newTeamBPicks,
         currentStep: nextStep,
         currentTeam: pickOrder[nextStep] as 0 | 1,
+        staging: null,
       };
     }
 

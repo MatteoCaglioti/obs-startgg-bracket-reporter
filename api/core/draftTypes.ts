@@ -15,6 +15,12 @@ export interface DraftRuleset {
   characters: DraftCharacter[];
 }
 
+/** Characters staged (selected but not yet locked in) by the acting team. */
+export interface DraftStagingState {
+  codenames: string[];
+  action: "ban" | "pick";
+}
+
 export interface DraftState {
   phase: "idle" | "rps" | "ban" | "pick" | "complete";
   pendingTeam1Name: string;
@@ -31,5 +37,7 @@ export interface DraftState {
   ruleset: DraftRuleset | null;
   canUndo: boolean;
   canRedo: boolean;
+  /** Characters selected but not yet confirmed. Shown at 30% opacity on overlay. */
+  staging: DraftStagingState | null;
 }
 

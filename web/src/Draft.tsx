@@ -251,10 +251,15 @@ export default function Draft() {
   const handleRpsWinner  = useCallback(async (w: 1 | 2) => { try { await draftPost("/rps-winner", { winner: w }); } catch (e: any) { setError(e.message); } }, []);
 
   const handleToggleChar = useCallback((codename: string) => {
-    setSelectedChars(prev =>
-      prev.includes(codename) ? prev.filter(x => x !== codename) : [...prev, codename]
-    );
-  }, []);
+    if (!draft) return;
+    const newChars = selectedChars.includes(codename)
+      ? selectedChars.filter(x => x !== codename)
+      : [...selectedChars, codename];
+    setSelectedChars(newChars);
+    if (draft.phase === "ban" || draft.phase === "pick") {
+      draftPost("/stage", { codenames: newChars, action: draft.phase }).catch(() => {});
+    }
+  }, [selectedChars, draft]);
 
   const handleLockIn = useCallback(async () => {
     if (selectedChars.length === 0 || !draft) return;

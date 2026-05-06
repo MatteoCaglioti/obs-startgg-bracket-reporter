@@ -12,6 +12,11 @@ export interface DraftRuleset {
   characters: DraftCharacter[];
 }
 
+export interface DraftStagingState {
+  codenames: string[];
+  action: "ban" | "pick";
+}
+
 export interface DraftState {
   phase: "idle" | "rps" | "ban" | "pick" | "complete";
   pendingTeam1Name: string;
@@ -28,5 +33,6 @@ export interface DraftState {
   ruleset: DraftRuleset | null;
   canUndo: boolean;
   canRedo: boolean;
+  staging: DraftStagingState | null;
 }
 

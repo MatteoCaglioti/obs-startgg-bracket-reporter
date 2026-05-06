@@ -140,14 +140,30 @@ body {
   filter: grayscale(1) brightness(0.45);
 }
 
+/* ── Character slot state ───────────────────────────────────────────────── */
+
+.char-slot.pending   { opacity: 0.3; }
+.char-slot.confirmed { opacity: 1; }
+
 /* Left panel: slide in from the right (toward center) */
-#panel-a .char-slot.filled {
-  animation: slideInFromRight 0.4s ease-out backwards;
+#panel-a .char-slot.pop-in-confirmed {
+  animation: slideInFromRight 0.4s ease-out both;
+}
+#panel-a .char-slot.pop-in-pending {
+  animation: slideInFromRightPending 0.4s ease-out both;
 }
 
 /* Right panel: slide in from the left (toward center) */
-#panel-b .char-slot.filled {
-  animation: slideInFromLeft 0.4s ease-out backwards;
+#panel-b .char-slot.pop-in-confirmed {
+  animation: slideInFromLeft 0.4s ease-out both;
+}
+#panel-b .char-slot.pop-in-pending {
+  animation: slideInFromLeftPending 0.4s ease-out both;
+}
+
+/* Confirm flash: pending → confirmed, opacity 0.3→1 */
+.char-slot.confirm-flash {
+  animation: confirmOpacity 0.5s ease-out both;
 }
 
 @keyframes slideInFromRight {
@@ -158,6 +174,36 @@ body {
 @keyframes slideInFromLeft {
   from { transform: translateX(-25%); opacity: 0; }
   to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes slideInFromRightPending {
+  from { transform: translateX(25%); opacity: 0; }
+  to   { transform: translateX(0);   opacity: 0.3; }
+}
+
+@keyframes slideInFromLeftPending {
+  from { transform: translateX(-25%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 0.3; }
+}
+
+@keyframes confirmOpacity {
+  from { opacity: 0.3; }
+  to   { opacity: 1; }
+}
+
+/* White flash overlay appended to slot on confirm-flash transition */
+.flash-overlay {
+  position: absolute;
+  inset: 0;
+  background: white;
+  pointer-events: none;
+  z-index: 50;
+  animation: flashWhite 0.5s ease-out forwards;
+}
+
+@keyframes flashWhite {
+  0%   { opacity: 0.85; }
+  100% { opacity: 0; }
 }
 
 /* ── Section labels — overlaid on portrait bottoms, above all char-slots ── */

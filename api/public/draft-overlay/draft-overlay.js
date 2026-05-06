@@ -13,67 +13,66 @@ const firstPickB     = document.getElementById('first-pick-b');
 const phaseBadge     = document.getElementById('phase-badge');
 const turnIndicator  = document.getElementById('turn-indicator');
 
-// Per-container set of already-rendered codenames — prevents animation replay
+// Per-container map of codename → 'pending' | 'confirmed'
+// Tracks the last-known render state to determine transition animations.
 const knownChars = new Map([
-  [picksA, new Set()],
-  [picksB, new Set()],
-  [bansA,  new Set()],
-  [bansB,  new Set()],
+  [picksA, new Map()],
+  [picksB, new Map()],
+  [bansA,  new Map()],
+  [bansB,  new Map()],
 ]);
 
-// maxWidthRatio: max-width as a fraction of portrait height.
-// Controls how much wide portraits (Hugo, Q, etc.) affect center-to-center spacing.
-// Tune this to taste — 0.5 = half the portrait height, 1.0 = no capping.
-// overlap: base margin-left applied to every slot after the first (negative = overlap).
 const PICK_BASE = { h: 263, maxWidthRatio: 1, overlap: -88 };
 const BAN_BASE  = { h: 150, maxWidthRatio: 1, overlap: -24 };
 
 /**
  * Render character slots into a container.
  *
- * isRight: right-panel mode — array is reversed so the first game-pick ends up
- *   outermost (rightmost), icons pack from the right edge, and z-index is
- *   assigned so the outermost character renders on top.
+ * confirmedChars: characters that have been locked in (opacity 1)
+ * pendingChars:   characters currently staged but not yet confirmed (opacity 0.3)
  *
- * Progressive sizing: outermost character is 100% base size; each step toward
- *   center is 10% smaller (scale = 0.9^outerDistance).
- *
- * Animation: only new characters (not yet in knownChars) receive the .filled
- *   class that triggers the pop-in animation.
+ * Animations are driven by state transitions in knownChars:
+ *   undefined → pending:   pop-in-pending  (slides in, ends at 0.3 opacity)
+ *   undefined → confirmed: pop-in-confirmed (slides in, ends at 1.0 opacity)
+ *   pending → confirmed:   confirm-flash   (0.3→1 + white flash overlay)
+ *   confirmed → pending:   no animation    (snap to 0.3 opacity, undo scenario)
  */
-function renderSlots(container, chars, isRight, base, progressive = true) {
-  const known   = knownChars.get(container);
-  const current = new Set(chars.map(c => c.codename));
+function renderSlots(container, confirmedChars, pendingChars, isRight, base, progressive = true) {
+  const known = knownChars.get(container);
 
-  // Sync known: drop chars removed by undo so they animate again if re-added
-  known.forEach(cn => { if (!current.has(cn)) known.delete(cn); });
+  const confirmedSet = new Set(confirmedChars.map(c => c.codename));
+  const allChars     = [...confirmedChars, ...pendingChars];
+  const currentSet   = new Set(allChars.map(c => c.codename));
 
-  // Right panel: reverse render order so first pick is DOM-last = rightmost
-  const ordered = isRight ? [...chars].reverse() : chars;
+  // Remove chars that are no longer present (undo removed them entirely)
+  known.forEach((_state, cn) => { if (!currentSet.has(cn)) known.delete(cn); });
+
+  // Right panel: reverse so first pick ends up rightmost (DOM-last)
+  const ordered = isRight ? [...allChars].reverse() : allChars;
   const n = ordered.length;
 
   container.innerHTML = '';
   ordered.forEach((char, i) => {
-    const isNew = !known.has(char.codename);
-    if (isNew) known.add(char.codename);
+    const prevState = known.get(char.codename);
+    const newState  = confirmedSet.has(char.codename) ? 'confirmed' : 'pending';
 
-    // outerDist: 0 = outermost (edge of screen), increases toward center
+    // Determine which animation class to apply for this transition
+    let animClass = '';
+    if (prevState === undefined) {
+      animClass = newState === 'confirmed' ? 'pop-in-confirmed' : 'pop-in-pending';
+    } else if (prevState === 'pending' && newState === 'confirmed') {
+      animClass = 'confirm-flash';
+    }
+    // confirmed→pending (undo): no animation, just opacity change via CSS class
+
+    known.set(char.codename, newState);
+
     const outerDist = progressive ? (isRight ? (n - 1 - i) : i) : 0;
     const scale  = Math.pow(0.9, outerDist);
     const h      = Math.round(base.h * scale);
     const maxW   = base.maxWidthRatio ? Math.round(h * base.maxWidthRatio) : '';
+    const zIdx   = progressive ? (isRight ? (i + 1) : (n - i)) : 1;
 
-    // Outer character has highest z-index so it renders over inner ones
-    // For non-progressive (bans), all slots get z-index 1
-    const zIdx = progressive
-      ? (isRight ? (i + 1) : (n - i))
-      : 1;
-
-    // Compute margin-left for this slot (i > 0 only).
-    // For panel-a, the gap between ordered[i] and ordered[i-1] belongs to ordered[i].
-    // For panel-b (DOM reversed), the gap between ordered[i] and ordered[i-1] corresponds
-    // to the "previously drafted" neighbor of ordered[i-1] in draft order, so we read the
-    // offset from ordered[i-1] instead — this makes portraitOffset symmetric across panels.
     let marginLeft = '';
     if (i > 0) {
       const offsetChar = isRight ? ordered[i - 1] : ordered[i];
@@ -83,8 +82,16 @@ function renderSlots(container, chars, isRight, base, progressive = true) {
     }
 
     const slot = document.createElement('div');
-    slot.className = isNew ? 'char-slot filled' : 'char-slot';
+    slot.className = ['char-slot', newState, animClass].filter(Boolean).join(' ');
     slot.style.cssText = `height:${h}px;z-index:${zIdx};${maxW ? `max-width:${maxW}px;` : ''}${marginLeft}`;
+
+    // White flash overlay for confirm-flash transition
+    if (animClass === 'confirm-flash') {
+      const flash = document.createElement('div');
+      flash.className = 'flash-overlay';
+      flash.addEventListener('animationend', () => flash.remove(), { once: true });
+      slot.appendChild(flash);
+    }
 
     const img = document.createElement('img');
     img.src = `${API_BASE}${char.imagePath}`;
@@ -104,22 +111,43 @@ socket.on('draft:update', (state) => {
   const ruleset = state.ruleset;
   if (!ruleset) return;
 
-  const allChars  = ruleset.characters;
-  const find      = cn => allChars.find(c => c.codename === cn);
+  const allChars = ruleset.characters;
+  const find     = cn => allChars.find(c => c.codename === cn);
 
-  // Left panel = original team 1 position (matches scoreboard P1 side, always)
   const team1Name = state.pendingTeam1Name || 'Team 1';
   const team2Name = state.pendingTeam2Name || 'Team 2';
   nameA.textContent = team1Name;
   nameB.textContent = team2Name;
 
-  // rpsWinner: 1 → team1 = teamA (first pick); 2 → team2 = teamA (first pick)
+  // leftIsA: left panel shows teamA picks/bans (rpsWinner=1 means team1 won and is teamA)
   const leftIsA = !state.rpsWinner || state.rpsWinner === 1;
 
-  renderSlots(picksA, (leftIsA ? state.teamAPicks : state.teamBPicks).map(find).filter(Boolean), false, PICK_BASE, true);
-  renderSlots(bansA,  (leftIsA ? state.teamABans  : state.teamBBans ).map(find).filter(Boolean), false, BAN_BASE,  true);
-  renderSlots(picksB, (leftIsA ? state.teamBPicks : state.teamAPicks).map(find).filter(Boolean), true,  PICK_BASE, true);
-  renderSlots(bansB,  (leftIsA ? state.teamBBans  : state.teamABans ).map(find).filter(Boolean), true,  BAN_BASE,  true);
+  // Confirmed chars per panel
+  const confirmedPicksLeft  = (leftIsA ? state.teamAPicks : state.teamBPicks).map(find).filter(Boolean);
+  const confirmedBansLeft   = (leftIsA ? state.teamABans  : state.teamBBans ).map(find).filter(Boolean);
+  const confirmedPicksRight = (leftIsA ? state.teamBPicks : state.teamAPicks).map(find).filter(Boolean);
+  const confirmedBansRight  = (leftIsA ? state.teamBBans  : state.teamABans ).map(find).filter(Boolean);
+
+  // Pending chars from staging state
+  let pendingPicksLeft = [], pendingBansLeft = [], pendingPicksRight = [], pendingBansRight = [];
+  if (state.staging) {
+    const { codenames, action } = state.staging;
+    const pendingChars  = codenames.map(find).filter(Boolean);
+    const actingIsA     = state.currentTeam === 0;
+    const actingIsLeft  = leftIsA ? actingIsA : !actingIsA;
+    if (action === 'pick') {
+      if (actingIsLeft) pendingPicksLeft  = pendingChars;
+      else              pendingPicksRight = pendingChars;
+    } else {
+      if (actingIsLeft) pendingBansLeft  = pendingChars;
+      else              pendingBansRight = pendingChars;
+    }
+  }
+
+  renderSlots(picksA, confirmedPicksLeft,  pendingPicksLeft,  false, PICK_BASE, true);
+  renderSlots(bansA,  confirmedBansLeft,   pendingBansLeft,   false, BAN_BASE,  true);
+  renderSlots(picksB, confirmedPicksRight, pendingPicksRight, true,  PICK_BASE, true);
+  renderSlots(bansB,  confirmedBansRight,  pendingBansRight,  true,  BAN_BASE,  true);
 
   firstPickA.classList.toggle('hidden', state.rpsWinner !== 1);
   firstPickB.classList.toggle('hidden', state.rpsWinner !== 2);

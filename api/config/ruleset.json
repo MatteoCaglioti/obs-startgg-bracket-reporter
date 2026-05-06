@@ -13,7 +13,7 @@
     { "codename": "Ibuki",   "displayName": "Ibuki",   "imagePath": "/assets/characters/sf3ts/Ibuki.png" },
     { "codename": "Ken",     "displayName": "Ken",     "imagePath": "/assets/characters/sf3ts/Ken.png" },
     { "codename": "Makoto",  "displayName": "Makoto",  "imagePath": "/assets/characters/sf3ts/Makoto.png" },
-    { "codename": "Necro",   "displayName": "Necro",   "imagePath": "/assets/characters/sf3ts/Necro.png", "portraitOffset": -50 },
+    { "codename": "Necro",   "displayName": "Necro",   "imagePath": "/assets/characters/sf3ts/Necro.png", "portraitOffset": -20 },
     { "codename": "Oro",     "displayName": "Oro",     "imagePath": "/assets/characters/sf3ts/Oro.png" },
     { "codename": "Q",       "displayName": "Q",       "imagePath": "/assets/characters/sf3ts/Q.png" },
     { "codename": "Remy",    "displayName": "Remy",    "imagePath": "/assets/characters/sf3ts/Remy.png" },
