@@ -100,13 +100,15 @@
   gap: var(--col-gap, 12px);
   align-items: flex-start;
   justify-content: center;
-  padding: 20px 0;
+  padding: 20px 120px 20px 20px; /* right padding accommodates the rightward slant of the top rows */
+  overflow: visible;
 }
 
 .gridCol {
   display: flex;
   flex-direction: column;
   gap: var(--icon-gap, 8px);
+  overflow: visible;
 }
 
 /* Center column protrudes half an icon above and below — pulled up by half a slot */
@@ -242,11 +244,12 @@
 /* ── OvalCard — main character selection grid ─────────────────────────────── */
 
 :root {
-  --oval-w:      76px;
-  --oval-h:      94px;
-  --oval-rotate: -12deg;
-  --icon-gap:    8px;
-  --col-gap:     14px;
+  --oval-w:         76px;
+  --oval-h:         94px;
+  --oval-rotate:    12deg;   /* clockwise tilt — matches SF3TS character select */
+  --icon-gap:       8px;
+  --col-gap:        14px;
+  --slant-per-row:  20px;    /* each row shifts this much left relative to the row above */
 }
 
 .ovalCard {
@@ -257,6 +260,11 @@
   cursor: default;
   /* Extra space below for the name label */
   margin-bottom: 14px;
+  /*
+   * Grid slant: top row (--row-index=0) sits furthest right; each successive row
+   * shifts left by --slant-per-row. Set --row-index and --max-row-index via inline style.
+   */
+  transform: translateX(calc((var(--max-row-index, 0) - var(--row-index, 0)) * var(--slant-per-row)));
 }
 
 .ovalCardClickable { cursor: pointer; }

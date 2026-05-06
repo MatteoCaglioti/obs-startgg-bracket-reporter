@@ -76,9 +76,11 @@ interface OvalCardProps {
   char: DraftCharacter;
   state: CharState;
   onClick?: () => void;
+  rowIndex?: number;
+  maxRowIndex?: number;
 }
 
-function OvalCard({ char, state, onClick }: OvalCardProps) {
+function OvalCard({ char, state, onClick, rowIndex = 0, maxRowIndex = 0 }: OvalCardProps) {
   const isBanned      = state === "banned";
   const isPickedA     = state === "pickedA";
   const isPickedB     = state === "pickedB";
@@ -94,12 +96,15 @@ function OvalCard({ char, state, onClick }: OvalCardProps) {
 
   const teamColor = isPickedA ? TEAM_A_COLOR : isPickedB ? TEAM_B_COLOR : undefined;
 
+  const slantVars = { "--row-index": rowIndex, "--max-row-index": maxRowIndex } as React.CSSProperties;
+  const teamColorVar = teamColor ? { "--team-color": teamColor } as React.CSSProperties : {};
+
   return (
     <div
       onClick={isClickable ? onClick : undefined}
       title={char.displayName}
       className={`${styles.ovalCard} ${isClickable ? styles.ovalCardClickable : ""} ${stateClass}`}
-      style={teamColor ? { "--team-color": teamColor } as React.CSSProperties : undefined}
+      style={{ ...slantVars, ...teamColorVar }}
     >
       <div className={styles.ovalClip}>
         <img src={`${API_BASE}${char.imagePath}`} alt={char.displayName} draggable={false} className={styles.ovalImg} />
@@ -305,13 +310,15 @@ export default function Draft() {
               { codenames: GRID_RIGHT,  colClass: styles.gridCol },
             ] as const).map(({ codenames, colClass }, colIdx) => (
               <div key={colIdx} className={colClass}>
-                {codenames.map(codename => {
+                {codenames.map((codename, rowIndex) => {
                   const c = allChars.find(ch => ch.codename === codename);
                   if (!c) return null;
                   const cstate = getCharState(c.codename);
                   const isClickable = cstate === "normal" || (phase === "pick" && cstate === "selected");
                   return (
                     <OvalCard key={c.codename} char={c} state={cstate}
+                      rowIndex={rowIndex}
+                      maxRowIndex={codenames.length - 1}
                       onClick={isClickable ? () => { if (phase === "ban") handleBan(c.codename); else handlePickSelect(c.codename); } : undefined}
                     />
                   );
