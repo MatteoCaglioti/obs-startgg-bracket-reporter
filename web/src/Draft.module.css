@@ -97,10 +97,10 @@
 
 .charGrid {
   display: flex;
-  gap: var(--col-gap, 12px);
+  gap: 0; /* each column controls its own spacing via margins */
   align-items: flex-start;
   justify-content: center;
-  padding: 20px 120px 20px 20px; /* right padding accommodates the rightward slant of the top rows */
+  padding: 20px 120px 20px 20px;
   overflow: visible;
 }
 
@@ -109,11 +109,22 @@
   flex-direction: column;
   gap: var(--icon-gap, 8px);
   overflow: visible;
+  position: relative; /* needed for z-index */
 }
 
-/* Center column protrudes half an icon above and below — pulled up by half a slot */
+/*
+ * Center column: pulled up half a slot, overlaps right column by ~20% of oval width.
+ * z-index: 1 so center column renders on top of the right column it overlaps.
+ */
 .gridColCenter {
-  margin-top: calc(-0.5 * (var(--oval-h, 94px) + var(--icon-gap, 8px)));
+  margin-top: calc(-0.5 * (var(--oval-h) + var(--icon-gap)));
+  margin-right: calc(-0.2 * var(--oval-w));
+  z-index: 1;
+}
+
+/* Right column: pushed down ~25% of oval height to match in-game vertical offset */
+.gridColRight {
+  margin-top: calc(0.25 * var(--oval-h));
 }
 
 .confirmRow {

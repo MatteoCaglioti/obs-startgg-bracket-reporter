@@ -306,7 +306,7 @@ export default function Draft() {
             {([
               { codenames: GRID_LEFT,   colClass: styles.gridCol },
               { codenames: GRID_CENTER, colClass: `${styles.gridCol} ${styles.gridColCenter}` },
-              { codenames: GRID_RIGHT,  colClass: styles.gridCol },
+              { codenames: GRID_RIGHT,  colClass: `${styles.gridCol} ${styles.gridColRight}` },
             ] as const).map(({ codenames, colClass }, colIdx) => (
               <div key={colIdx} className={colClass}>
                 {codenames.map((codename, rowIndex) => {
