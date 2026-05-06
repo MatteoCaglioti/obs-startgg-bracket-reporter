@@ -97,9 +97,10 @@ body {
   flex-direction: column;
 }
 
-/* Pre-size the ban section to its populated height so the label never jumps.
+/* Pre-size the ban section to the portrait height so the label never jumps
+   and always overlaps the portrait fade-out zone correctly.
    188px = BAN_BASE.h in draft-overlay.js */
-.ban-section  { min-height: calc(188px + var(--label-height)); }
+.ban-section  { min-height: 188px; }
 
 /* Pick section only needs label height as a floor — picks appear last and grow upward. */
 .pick-section { min-height: var(--label-height); }
@@ -152,7 +153,7 @@ body {
 
 /* ── Character slot state ───────────────────────────────────────────────── */
 
-.char-slot.pending   { opacity: 0.3; }
+.char-slot.pending   { opacity: 0.65; }
 .char-slot.confirmed { opacity: 1; }
 
 /* Left panel: slide in from the right (toward center) */
@@ -193,12 +194,12 @@ body {
 
 @keyframes slideInFromRightPending {
   from { transform: translateX(25%); opacity: 0; }
-  to   { transform: translateX(0);   opacity: 0.3; }
+  to   { transform: translateX(0);   opacity: 0.65; }
 }
 
 @keyframes slideInFromLeftPending {
   from { transform: translateX(-25%); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 0.3; }
+  to   { transform: translateX(0);    opacity: 0.65; }
 }
 
 @keyframes confirmFlash {
