@@ -81,6 +81,17 @@ export function createDraftRouter(io: Server) {
     return res.json({ ok: true });
   });
 
+  // POST /draft/lock-in — atomically lock in a turn's worth of bans/picks; body: { codenames: string[] }
+  router.post("/lock-in", (req, res) => {
+    const { codenames } = req.body ?? {};
+    if (!Array.isArray(codenames) || codenames.length === 0) {
+      return res.status(400).json({ error: "codenames (non-empty array) is required" });
+    }
+    const ok = draftStore.lockIn(codenames);
+    if (!ok) return res.status(409).json({ error: "Invalid lock-in" });
+    return res.json(draftStore.getState());
+  });
+
   // POST /draft/undo
   router.post("/undo", (_req, res) => {
     const ok = draftStore.undo();

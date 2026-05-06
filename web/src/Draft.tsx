@@ -263,11 +263,8 @@ export default function Draft() {
 
   const handleLockIn = useCallback(async () => {
     if (selectedChars.length === 0 || !draft) return;
-    const endpoint = draft.phase === "ban" ? "/ban" : "/pick";
     try {
-      for (const codename of selectedChars) {
-        await draftPost(endpoint, { codename });
-      }
+      await draftPost("/lock-in", { codenames: selectedChars });
       setSelectedChars([]);
     } catch (e: any) { setError(e.message); setSelectedChars([]); }
   }, [selectedChars, draft]);

@@ -161,9 +161,14 @@ body {
   animation: slideInFromLeftPending 0.4s ease-out both;
 }
 
-/* Confirm flash: pending → confirmed, opacity 0.3→1 */
+/* Confirm flash: pending → confirmed.
+   Starts at 0.3 opacity, spikes brightness, then normalizes.
+   Uses filter:brightness so only the actual (non-transparent) pixels flash.
+   fill-mode:backwards applies the from keyframe before animation starts,
+   but no fill-mode:forwards so the filter reverts to normal CSS after animation
+   (lets .bans .char-slot grayscale re-apply cleanly). */
 .char-slot.confirm-flash {
-  animation: confirmOpacity 0.5s ease-out both;
+  animation: confirmFlash 0.5s ease-out backwards;
 }
 
 @keyframes slideInFromRight {
@@ -186,24 +191,10 @@ body {
   to   { transform: translateX(0);    opacity: 0.3; }
 }
 
-@keyframes confirmOpacity {
-  from { opacity: 0.3; }
-  to   { opacity: 1; }
-}
-
-/* White flash overlay appended to slot on confirm-flash transition */
-.flash-overlay {
-  position: absolute;
-  inset: 0;
-  background: white;
-  pointer-events: none;
-  z-index: 50;
-  animation: flashWhite 0.5s ease-out forwards;
-}
-
-@keyframes flashWhite {
-  0%   { opacity: 0.85; }
-  100% { opacity: 0; }
+@keyframes confirmFlash {
+  0%   { opacity: 0.3; filter: brightness(1); }
+  20%  { opacity: 1;   filter: brightness(6); }
+  100% { opacity: 1;   filter: brightness(1); }
 }
 
 /* ── Section labels — overlaid on portrait bottoms, above all char-slots ── */

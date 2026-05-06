@@ -194,6 +194,57 @@ class DraftStore {
     return true;
   }
 
+  /**
+   * Atomically lock in multiple bans or picks in a single state update.
+   * This ensures all chars transition from pending→confirmed in one socket emit,
+   * preventing animation interruptions between sequential chars in a multi-char turn.
+   */
+  lockIn(codenames: string[]): boolean {
+    if (this.state.phase !== "ban" && this.state.phase !== "pick") return false;
+    if (!this.state.ruleset) return false;
+
+    // Validate all codenames up-front before mutating anything
+    const allBanned = [...this.state.teamABans, ...this.state.teamBBans];
+    const allPicked = [...this.state.teamAPicks, ...this.state.teamBPicks];
+    for (const codename of codenames) {
+      if (allBanned.includes(codename) || allPicked.includes(codename)) return false;
+    }
+
+    this.saveSnapshot();
+
+    // Apply all bans/picks atomically — phase may transition mid-batch (e.g. last ban)
+    let s: Omit<DraftState, "canUndo" | "canRedo"> = { ...this.state, staging: null };
+    const ruleset = this.state.ruleset!;
+
+    for (const codename of codenames) {
+      if (s.phase === "ban") {
+        const actingTeam = ruleset.banOrder[s.currentStep];
+        const nextStep   = s.currentStep + 1;
+        const newABans   = actingTeam === 0 ? [...s.teamABans, codename] : s.teamABans;
+        const newBBans   = actingTeam === 1 ? [...s.teamBBans, codename] : s.teamBBans;
+        if (nextStep >= ruleset.banOrder.length) {
+          s = { ...s, teamABans: newABans, teamBBans: newBBans, phase: "pick", currentStep: 0, currentTeam: ruleset.pickOrder[0] as 0 | 1 };
+        } else {
+          s = { ...s, teamABans: newABans, teamBBans: newBBans, currentStep: nextStep, currentTeam: ruleset.banOrder[nextStep] as 0 | 1 };
+        }
+      } else if (s.phase === "pick") {
+        const actingTeam = ruleset.pickOrder[s.currentStep];
+        const nextStep   = s.currentStep + 1;
+        const newAPicks  = actingTeam === 0 ? [...s.teamAPicks, codename] : s.teamAPicks;
+        const newBPicks  = actingTeam === 1 ? [...s.teamBPicks, codename] : s.teamBPicks;
+        if (nextStep >= ruleset.pickOrder.length) {
+          s = { ...s, teamAPicks: newAPicks, teamBPicks: newBPicks, phase: "complete", currentStep: nextStep, currentTeam: null };
+        } else {
+          s = { ...s, teamAPicks: newAPicks, teamBPicks: newBPicks, currentStep: nextStep, currentTeam: ruleset.pickOrder[nextStep] as 0 | 1 };
+        }
+      }
+    }
+
+    this.state = { ...s, canUndo: false, canRedo: false };
+    this.emit();
+    return true;
+  }
+
   undo(): boolean {
     if (this.historyIndex <= 0) return false;
     this.historyIndex--;

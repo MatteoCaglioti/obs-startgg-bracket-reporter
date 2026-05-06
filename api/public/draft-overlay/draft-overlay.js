@@ -34,7 +34,7 @@ const BAN_BASE  = { h: 150, maxWidthRatio: 1, overlap: -24 };
  * Animations are driven by state transitions in knownChars:
  *   undefined → pending:   pop-in-pending  (slides in, ends at 0.3 opacity)
  *   undefined → confirmed: pop-in-confirmed (slides in, ends at 1.0 opacity)
- *   pending → confirmed:   confirm-flash   (0.3→1 + white flash overlay)
+ *   pending → confirmed:   confirm-flash   (brightness spike on the char pixels)
  *   confirmed → pending:   no animation    (snap to 0.3 opacity, undo scenario)
  */
 function renderSlots(container, confirmedChars, pendingChars, isRight, base, progressive = true) {
@@ -84,14 +84,6 @@ function renderSlots(container, confirmedChars, pendingChars, isRight, base, pro
     const slot = document.createElement('div');
     slot.className = ['char-slot', newState, animClass].filter(Boolean).join(' ');
     slot.style.cssText = `height:${h}px;z-index:${zIdx};${maxW ? `max-width:${maxW}px;` : ''}${marginLeft}`;
-
-    // White flash overlay for confirm-flash transition
-    if (animClass === 'confirm-flash') {
-      const flash = document.createElement('div');
-      flash.className = 'flash-overlay';
-      flash.addEventListener('animationend', () => flash.remove(), { once: true });
-      slot.appendChild(flash);
-    }
 
     const img = document.createElement('img');
     img.src = `${API_BASE}${char.imagePath}`;
