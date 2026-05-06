@@ -120,17 +120,7 @@ body {
   overflow: visible;
   position: relative;
   flex-shrink: 0;
-  /* height and max-width set proportionally by JS */
-}
-
-/* Picks: overlap each subsequent icon leftward */
-.picks .char-slot + .char-slot {
-  margin-left: -88px;
-}
-
-/* Bans: slight overlap */
-.bans .char-slot + .char-slot {
-  margin-left: -24px;
+  /* height and max-width set proportionally by JS; margin-left set inline per-slot (includes per-character offsets) */
 }
 
 .char-slot img {
