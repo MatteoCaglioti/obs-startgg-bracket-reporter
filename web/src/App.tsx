@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { io } from "socket.io-client";
 import {
   assignMatch,
   unassignMatch,
@@ -26,17 +27,18 @@ function getStatusLabel(status: Match["status"]) {
 
 export default function App() {
   const [matches, setMatches] = useState<Record<string, Match>>({});
-  const [currentMatch, setCurrentMatch] = useState<Match | null>(null);
   const [streams, setStreams] = useState<TournamentStream[]>([]);
-  const [selectedStream, setSelectedStream] = useState<string>("");
   const [hasConfig, setHasConfig] = useState<boolean | null>(null);
   const [tokenInput, setTokenInput] = useState("");
   const [savingConfig, setSavingConfig] = useState(false);
   const [slugInput, setSlugInput] = useState("");
-  const [activeStreamId, setActiveStreamId] = useState(
-    selectedStream || streams[0]?.id || "",
-  );
+  const [activeStreamId, setActiveStreamId] = useState("");
   const [isBusy, setIsBusy] = useState(true);
+
+  // Derived — always reflects backend truth; never manually set
+  const currentMatch = activeStreamId
+    ? Object.values(matches).find((m) => m.streamId === activeStreamId) ?? null
+    : null;
 
   const emptyStreamControlMatchComponent = () => {
     return (
@@ -74,14 +76,11 @@ export default function App() {
         setMatches(nextMatches);
 
         const matchesArray = Object.values(nextMatches) as Match[];
-
         const matchForSelectedStream =
           matchesArray.find((match) => match.streamId) ?? null;
-        setActiveStreamId(
-          matchForSelectedStream?.streamId || nextStreams?.[0]?.id || "",
+        setActiveStreamId((prev) =>
+          prev || matchForSelectedStream?.streamId || nextStreams?.[0]?.id || "",
         );
-
-        setCurrentMatch(matchForSelectedStream);
       }
     } catch (error) {
       console.error("Error refreshing start gg data:", error);
@@ -101,8 +100,6 @@ export default function App() {
         ...prev,
         [updatedMatch.id]: updatedMatch,
       }));
-
-      setCurrentMatch(null);
     } catch (error) {
       console.error("Error unassigning stream match:", error);
       alert("Error unassigning stream match, restart app if issues persist");
@@ -153,6 +150,16 @@ export default function App() {
 
     refreshData();
   }, [hasConfig]);
+
+  useEffect(() => {
+    const socket = io("http://localhost:3001");
+
+    socket.on("match:update", (updatedMatches: Record<string, Match>) => {
+      setMatches(updatedMatches);
+    });
+
+    return () => { socket.disconnect(); };
+  }, []);
 
   const selectedStreamName =
     streams?.find((stream) => stream.id === activeStreamId)?.name ||
@@ -247,7 +254,7 @@ export default function App() {
           <select
             id="stream-select"
             value={activeStreamId}
-            onChange={(e) => setSelectedStream(e.target.value)}
+            onChange={(e) => setActiveStreamId(e.target.value)}
           >
             {streams.map((stream) => (
               <option key={stream.id} value={stream.id}>
@@ -293,13 +300,10 @@ export default function App() {
                         activeStreamId,
                       );
 
-                      setMatches((prev) => {
-                        const rest = { ...prev };
-                        delete rest[updatedMatch.id];
-                        return rest;
-                      });
-
-                      setCurrentMatch(updatedMatch);
+                      setMatches((prev) => ({
+                        ...prev,
+                        [updatedMatch.id]: updatedMatch,
+                      }));
                     } catch (error) {
                       console.error("Error assigning stream match:", error);
                       alert(
@@ -372,7 +376,7 @@ export default function App() {
                             currentMatch.score2,
                           );
 
-                          setCurrentMatch(updatedMatch);
+                          setMatches((prev) => ({ ...prev, [updatedMatch.id]: updatedMatch }));
                         }}
                         aria-label={`Decrease ${currentMatch.player1?.name ?? "TBD"} score`}
                       >
@@ -389,7 +393,7 @@ export default function App() {
                             currentMatch.score2,
                           );
 
-                          setCurrentMatch(updatedMatch);
+                          setMatches((prev) => ({ ...prev, [updatedMatch.id]: updatedMatch }));
                         }}
                         aria-label={`Increase ${currentMatch.player1?.name ?? "TBD"} score`}
                       >
@@ -424,7 +428,7 @@ export default function App() {
                             currentMatch.score2 - 1,
                           );
 
-                          setCurrentMatch(updatedMatch);
+                          setMatches((prev) => ({ ...prev, [updatedMatch.id]: updatedMatch }));
                         }}
                         aria-label={`Decrease ${currentMatch.player2?.name ?? "TBD"} score`}
                       >
@@ -441,7 +445,7 @@ export default function App() {
                             currentMatch.score2 + 1,
                           );
 
-                          setCurrentMatch(updatedMatch);
+                          setMatches((prev) => ({ ...prev, [updatedMatch.id]: updatedMatch }));
                         }}
                         aria-label={`Increase ${currentMatch.player2?.name ?? "TBD"} score`}
                       >
@@ -463,7 +467,7 @@ export default function App() {
 
                     try {
                       const updatedMatch = await startMatch(currentMatch.id);
-                      setCurrentMatch(updatedMatch);
+                      setMatches((prev) => ({ ...prev, [updatedMatch.id]: updatedMatch }));
                     } catch (error) {
                       console.error("Error starting stream match:", error);
                       alert(
@@ -485,7 +489,7 @@ export default function App() {
 
                     try {
                       const updatedMatch = await saveResult(currentMatch.id);
-                      setCurrentMatch(updatedMatch);
+                      setMatches((prev) => ({ ...prev, [updatedMatch.id]: updatedMatch }));
                     } catch (error) {
                       console.error("Error saving stream match result:", error);
                       alert(
@@ -519,7 +523,7 @@ export default function App() {
                         currentMatch.id,
                       );
 
-                      setCurrentMatch(updatedMatch);
+                      setMatches((prev) => ({ ...prev, [updatedMatch.id]: updatedMatch }));
                     } catch (error) {
                       console.error(
                         "Error Submitting stream match result:",

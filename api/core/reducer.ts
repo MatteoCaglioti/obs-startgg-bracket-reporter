@@ -7,11 +7,11 @@ export function reducer(state: Record<string, Match>, event: Event) {
 
   switch (event.type) {
     case "MATCH_ASSIGNED":
-      if (match.status !== "idle") return state;
-      if (match.streamId) return state;
+      if (match.status === "complete") return state;
+      if (match.streamId && match.streamId !== event.streamId) return state; // already on a different stream
 
       match.streamId = event.streamId;
-      match.status = "assigned";
+      if (match.status === "idle") match.status = "assigned";
       break;
 
     case "MATCH_UNASSIGNED":
@@ -19,6 +19,7 @@ export function reducer(state: Record<string, Match>, event: Event) {
 
       match.streamId = null;
 
+      // Only regress to idle if it hasn't been started yet
       if (match.status === "assigned") {
         match.status = "idle";
       }

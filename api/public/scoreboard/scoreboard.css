@@ -6,15 +6,15 @@
   /* ── Element positions (within the 1920×1080 OBS canvas) ───────────────── */
   --match-top:    158px;         /* match info: distance from top              */
 
-  --p1-top:       216px;         /* ~20% of 1080px                             */
-  --p1-left:      0px;           /* P1 block: distance from left edge          */
+  --p1-top:       140px;         /* ~20% of 1080px                             */
+  --p1-left:      396px;         /* P1 block: distance from left edge          */
 
-  --p2-top:       216px;
-  --p2-right:     0px;           /* P2 block: distance from right edge         */
+  --p2-top:       140px;
+  --p2-right:     396px;         /* P2 block: distance from right edge         */
 
   /* ── Panel dimensions ──────────────────────────────────────────────────── */
-  --panel-height: 68px;
-  --panel-width:  480px;
+  --panel-height: 60px;
+  --panel-width:  240px;
   --score-width:  68px;
 }
 
@@ -53,8 +53,13 @@ body {
 #matchPill {
   background: linear-gradient(to right, #8b2a75, #d00a69);
   border-radius: 10px;
-  padding: 5px 20px;
+  width: 178px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 0;
   white-space: nowrap;
+  overflow: hidden;
   transition: opacity 0.3s ease;
 }
 
@@ -97,9 +102,10 @@ body {
 
 /* P1: rounded rect, outer corners rounded */
 .name-panel.p1 {
-  flex-direction: row-reverse;   /* losers badge at far left, name toward right */
+  flex-direction: row;           /* badge at far left (outer), name toward score box */
   background: linear-gradient(to left, #527aa0, #4f4c83);
-  border-radius: 10px 0 0 10px;
+  border-radius: 0 0 0 4px;
+  border-top-left-radius: 24px 24px;
   padding-left: 18px;
   padding-right: 18px;
 }
@@ -108,7 +114,8 @@ body {
 .name-panel.p2 {
   flex-direction: row;           /* name toward left, losers badge at far right */
   background: linear-gradient(to right, #527aa0, #4f4c83);
-  border-radius: 0 10px 10px 0;
+  border-radius: 0 0 4px 0;
+  border-top-right-radius: 24px 24px;
   padding-right: 18px;
   padding-left: 18px;
 }
@@ -163,6 +170,7 @@ body {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  border-radius: 4px;
 }
 
 .score-val {
@@ -173,13 +181,12 @@ body {
 }
 
 .score-val.flash {
-  animation: pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: scoreFade 0.75s ease;
 }
 
-@keyframes pop {
-  0%   { transform: scale(1);   }
-  50%  { transform: scale(1.5); }
-  100% { transform: scale(1);   }
+@keyframes scoreFade {
+  0%   { opacity: 0.25; }
+  100% { opacity: 1; }
 }
 
 

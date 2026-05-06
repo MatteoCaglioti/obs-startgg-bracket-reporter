@@ -29,7 +29,20 @@ class Store {
     const nextState: Record<string, Match> = {};
 
     for (const fresh of freshMatches) {
-      nextState[fresh.id] = fresh;
+      const existing = this.state[fresh.id];
+      if (existing) {
+        // Preserve locally-managed state; only update structural metadata from start.gg
+        nextState[fresh.id] = {
+          ...fresh,
+          score1: existing.score1,
+          score2: existing.score2,
+          status: existing.status,
+          streamId: existing.streamId,
+          updatedAt: existing.updatedAt,
+        };
+      } else {
+        nextState[fresh.id] = fresh;
+      }
     }
 
     this.state = nextState;
