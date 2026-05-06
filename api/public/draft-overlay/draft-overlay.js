@@ -97,6 +97,15 @@ function renderSlots(container, confirmedChars, pendingChars, isRight, base, pro
   });
 }
 
+function revealBadge(el) {
+  if (el.classList.contains('hidden')) {
+    el.classList.remove('hidden');
+    el.classList.remove('badge-reveal'); // clear in case of rapid re-trigger
+    void el.offsetWidth;                 // force reflow to restart animation
+    el.classList.add('badge-reveal');
+  }
+}
+
 socket.on('draft:update', (state) => {
   if (!state || state.phase === 'idle') {
     overlay.classList.add('hidden');
@@ -145,8 +154,8 @@ socket.on('draft:update', (state) => {
   renderSlots(picksB, confirmedPicksRight, pendingPicksRight, true,  PICK_BASE, true);
   renderSlots(bansB,  confirmedBansRight,  pendingBansRight,  true,  BAN_BASE,  true);
 
-  firstPickA.classList.toggle('hidden', state.rpsWinner !== 1);
-  firstPickB.classList.toggle('hidden', state.rpsWinner !== 2);
+  if (state.rpsWinner === 1) revealBadge(firstPickA); else firstPickA.classList.add('hidden');
+  if (state.rpsWinner === 2) revealBadge(firstPickB); else firstPickB.classList.add('hidden');
 
   const phaseLabels = { rps: 'Rock Paper Scissors', ban: 'Ban Phase', pick: 'Pick Phase', complete: 'Draft Complete' };
   phaseBadge.textContent = phaseLabels[state.phase] || state.phase.toUpperCase();
