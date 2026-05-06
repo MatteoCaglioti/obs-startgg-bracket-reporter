@@ -1,0 +1,32 @@
+export interface DraftCharacter {
+  codename: string;
+  displayName: string;
+  imagePath: string;
+}
+
+export interface DraftRuleset {
+  name: string;
+  teamSize: number;
+  banOrder: number[];
+  pickOrder: number[];
+  characters: DraftCharacter[];
+}
+
+export interface DraftState {
+  phase: "idle" | "rps" | "ban" | "pick" | "complete";
+  pendingTeam1Name: string;
+  pendingTeam2Name: string;
+  teamAName: string;
+  teamBName: string;
+  teamABans: string[];
+  teamBBans: string[];
+  teamAPicks: string[];
+  teamBPicks: string[];
+  currentStep: number;
+  currentTeam: 0 | 1 | null;
+  rpsWinner: 1 | 2 | null;
+  ruleset: DraftRuleset | null;
+  canUndo: boolean;
+  canRedo: boolean;
+}
+

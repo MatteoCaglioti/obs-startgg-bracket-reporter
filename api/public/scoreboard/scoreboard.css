@@ -1,0 +1,185 @@
+/* =============================================================================
+   SCOREBOARD OVERLAY — layout variables
+   Adjust these to reposition/resize elements without touching anything else.
+   ============================================================================= */
+:root {
+  /* ── Element positions (within the 1920×1080 OBS canvas) ───────────────── */
+  --match-top:    0px;           /* match info: distance from top              */
+
+  --p1-top:       216px;         /* ~20% of 1080px                             */
+  --p1-left:      0px;           /* P1 block: distance from left edge          */
+
+  --p2-top:       216px;
+  --p2-right:     0px;           /* P2 block: distance from right edge         */
+
+  /* ── Panel dimensions ──────────────────────────────────────────────────── */
+  --panel-height: 68px;
+  --panel-width:  480px;
+  --score-width:  68px;
+}
+
+/* =============================================================================
+   Base
+   ============================================================================= */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: transparent;
+  font-family: "Barlow Condensed", sans-serif;
+}
+
+/* Root just manages visibility — no layout of its own */
+#root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+#root.hidden  { opacity: 0; }
+#root.visible { opacity: 1; }
+
+/* =============================================================================
+   ① Match info — centered at top, hangs down
+   ============================================================================= */
+#match-info {
+  position: absolute;
+  top:  var(--match-top);
+  left: 50%;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 4px 14px rgba(0,0,0,0.65));
+}
+
+#matchPill {
+  background: linear-gradient(to right, #8b2a75, #d00a69);
+  border-radius: 10px;
+  padding: 5px 18px;
+  white-space: nowrap;
+  transition: opacity 0.3s ease;
+}
+
+#matchPill.empty { opacity: 0; }
+
+#matchPill span {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* =============================================================================
+   ② Player blocks — each is an independent flex row
+   Layout: P1 → [name panel][score]    P2 → [score][name panel]
+   ============================================================================= */
+#p1-block,
+#p2-block {
+  position: absolute;
+  top: var(--p1-top);            /* same default; override individually if needed */
+  display: flex;
+  align-items: stretch;
+  filter: drop-shadow(0 4px 14px rgba(0,0,0,0.65));
+}
+
+#p1-block { left: var(--p1-left); top: var(--p1-top); }
+#p2-block { right: var(--p2-right); top: var(--p2-top); }
+
+/* ── Name panels ─────────────────────────────────────────────────────────── */
+
+.name-panel {
+  width: var(--panel-width);
+  height: var(--panel-height);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  /* Extra inner padding compensates for the clipped corner */
+}
+
+/* P1: rounded rect, outer corners rounded */
+.name-panel.p1 {
+  flex-direction: row-reverse;   /* losers badge at far left, name toward right */
+  background: linear-gradient(to left, #527aa0, #4f4c83);
+  border-radius: 10px 0 0 10px;
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+/* P2: rounded rect, outer corners rounded */
+.name-panel.p2 {
+  flex-direction: row;           /* name toward left, losers badge at far right */
+  background: linear-gradient(to right, #527aa0, #4f4c83);
+  border-radius: 0 10px 10px 0;
+  padding-right: 18px;
+  padding-left: 18px;
+}
+
+/* ── Player name ─────────────────────────────────────────────────────────── */
+
+.player-name {
+  flex: 1;
+  min-width: 0;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: opacity 0.2s ease;
+}
+
+.name-panel.p1 .player-name { text-align: right; }
+.name-panel.p2 .player-name { text-align: left;  }
+
+.player-name.changing { opacity: 0; }
+
+/* ── Losers bracket badge ────────────────────────────────────────────────── */
+
+.losers-badge {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: rgba(139, 42, 117, 0.9);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.losers-badge.visible { opacity: 1; }
+
+/* ── Score boxes ─────────────────────────────────────────────────────────── */
+
+.score-box {
+  width: var(--score-width);
+  height: var(--panel-height);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.score-val {
+  font-size: 38px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1;
+}
+
+.score-val.flash {
+  animation: pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pop {
+  0%   { transform: scale(1);   }
+  50%  { transform: scale(1.5); }
+  100% { transform: scale(1);   }
+}
+
+

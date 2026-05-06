@@ -1,0 +1,183 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: transparent;
+  overflow: hidden;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+#overlay {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  transition: opacity 0.4s ease;
+}
+
+#overlay.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Team panels ───────────────────────────────────────────────────────── */
+
+.team-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 48px 36px;
+  max-width: 44%;
+}
+
+/* Left panel: gradient fades right (white→transparent) */
+#panel-a {
+  background: linear-gradient(to right, rgba(255,255,255,0.15), transparent);
+  align-items: flex-start;
+}
+
+/* Right panel: gradient fades left (white→transparent), content right-aligned */
+#panel-b {
+  background: linear-gradient(to left, rgba(255,255,255,0.15), transparent);
+  align-items: flex-end;
+}
+
+/* ── Team header ────────────────────────────────────────────────────────── */
+
+.team-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.team-name {
+  font-size: 28px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+#panel-a .team-name { color: #ff7a6d; }
+#panel-b .team-name { color: #29b6f6; }
+
+.first-pick-badge {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.9);
+  background: rgba(255,255,255,0.18);
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.first-pick-badge.hidden { display: none; }
+
+/* ── Section labels ─────────────────────────────────────────────────────── */
+
+.section-label {
+  font-size: 26px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  color: rgba(255,255,255,0.55);
+  margin-top: 14px;
+  margin-bottom: 6px;
+}
+
+/* ── Character slots ────────────────────────────────────────────────────── */
+
+.char-slots {
+  display: flex;
+  align-items: flex-end;
+}
+
+/* Picks: large */
+.picks .char-slot {
+  width: 120px;
+  height: 150px;
+}
+
+/* Bans: smaller, washed out */
+.bans .char-slot {
+  width: 80px;
+  height: 100px;
+  filter: grayscale(1) brightness(0.45);
+}
+
+.char-slot {
+  border: none;
+  background: none;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+/* Overlap: each icon slides under the previous */
+.char-slot + .char-slot {
+  margin-left: -22px;
+}
+
+/* Pop-in animation */
+.char-slot.filled {
+  animation: popIn 0.25s ease;
+}
+
+/* Panel B: reverse icon stacking so first pick is outermost (rightmost) */
+#panel-b .char-slots {
+  flex-direction: row-reverse;
+}
+
+.char-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+}
+
+@keyframes popIn {
+  from { transform: scale(0.5); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+
+/* ── Center status ──────────────────────────────────────────────────────── */
+
+.center-status {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 24px 36px;
+  gap: 8px;
+}
+
+.phase-badge {
+  background: rgba(20, 20, 20, 0.85);
+  border: 1px solid #444;
+  border-radius: 20px;
+  padding: 6px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  white-space: nowrap;
+}
+
+.turn-indicator {
+  font-size: 13px;
+  color: #ccc;
+  white-space: nowrap;
+  min-height: 20px;
+  text-align: center;
+}
