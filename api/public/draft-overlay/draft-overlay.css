@@ -88,11 +88,16 @@ body {
 .ban-section {
   position: relative;
   width: 100%;
-  /* Always at least label-height tall so label is visible even when empty */
-  min-height: var(--label-height);
   display: flex;
   flex-direction: column;
 }
+
+/* Pre-size the ban section to its populated height so the label never jumps.
+   150px = BAN_BASE.h in draft-overlay.js */
+.ban-section  { min-height: calc(150px + var(--label-height)); }
+
+/* Pick section only needs label height as a floor — picks appear last and grow upward. */
+.pick-section { min-height: var(--label-height); }
 
 /* ── Character slots ────────────────────────────────────────────────────── */
 
