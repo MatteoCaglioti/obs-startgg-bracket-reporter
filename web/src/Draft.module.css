@@ -112,19 +112,19 @@
   position: relative; /* needed for z-index */
 }
 
-/*
- * Center column: pulled up half a slot, overlaps right column by ~20% of oval width.
- * z-index: 1 so center column renders on top of the right column it overlaps.
- */
+.gridColLeft {
+  z-index: 2; /* left column renders on top of center column which overlaps it */
+}
+
 .gridColCenter {
-  margin-top: calc(-0.5 * (var(--oval-h) + var(--icon-gap)));
-  margin-right: calc(-0.2 * var(--oval-w));
+  margin-top: calc(-0.35 * (var(--oval-h) + var(--icon-gap)));
+  margin-left: calc(-0.25 * var(--oval-w));
   z-index: 1;
 }
 
-/* Right column: pushed down ~25% of oval height to match in-game vertical offset */
 .gridColRight {
   margin-top: calc(0.25 * var(--oval-h));
+  margin-right: calc(0.2 * var(--oval-w));
 }
 
 .confirmRow {
@@ -255,12 +255,12 @@
 /* ── OvalCard — main character selection grid ─────────────────────────────── */
 
 :root {
-  --oval-w:         100px;  /* wider than tall — matches SF3TS oval portrait shape */
-  --oval-h:         86px;
-  --oval-rotate:    -12deg;
+  --oval-w:         104px;  /* wider than tall — matches SF3TS oval portrait shape */
+  --oval-h:         90px;
+  --oval-rotate:    -16deg;
   --icon-gap:       0px;
   --col-gap:        0px;
-  --slant-per-row:  25px;
+  --slant-per-row:  24px;
 }
 
 .ovalCard {
@@ -293,10 +293,9 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: top center;
-  /* Counter-rotate and scale up so the portrait appears upright inside the oval */
+  object-position: center center;
   transform: rotate(calc(-1 * var(--oval-rotate))) scale(1.4);
-  transform-origin: 50% 20%;
+  transform-origin: 50% 50%;
   display: block;
   pointer-events: none;
 }
