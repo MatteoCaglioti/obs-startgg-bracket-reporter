@@ -105,28 +105,40 @@ body {
 .char-slot {
   border: none;
   background: none;
+  /* Flex-centers image so wide portraits bleed symmetrically outside the capped slot width */
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
   overflow: visible;
-  position: relative; /* needed for z-index */
+  position: relative;
   flex-shrink: 0;
-  /* height set by JS; width is natural (driven by image aspect ratio) */
+  /* height set by JS; max-width caps layout width of wide portraits only */
 }
 
-/* Slot width is set by JS to a fixed step size; images bleed out via overflow:visible.
-   No margin-based overlap needed — spacing is center-to-center by construction. */
+/* Picks: overlap each subsequent icon leftward */
+.picks .char-slot + .char-slot {
+  margin-left: -88px;
+}
+
+/* Bans: slight overlap */
+.bans .char-slot + .char-slot {
+  margin-left: -24px;
+}
+
+/* Cap wide portraits; narrower ones are unaffected (natural width < max) */
+.picks .char-slot { max-width: 120px; }
+.bans  .char-slot { max-width: 80px; }
+
 .char-slot img {
-  /* Absolutely centered so the portrait bleeds symmetrically outside the fixed-width slot.
-     This ensures center-to-center spacing is constant regardless of portrait aspect ratio. */
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
   height: 100%;
   width: auto;
+  flex-shrink: 0; /* don't let flex compress the image */
   display: block;
 }
 
-/* Left panel portraits: horizontally mirrored — must include the centering translateX */
+/* Left panel portraits: horizontally mirrored */
 #panel-a .char-slot img {
-  transform: translateX(-50%) scaleX(-1);
+  transform: scaleX(-1);
 }
 
 
