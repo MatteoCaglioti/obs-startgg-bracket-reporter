@@ -109,7 +109,6 @@ function OvalCard({ char, state, onClick, rowIndex = 0, maxRowIndex = 0 }: OvalC
       <div className={styles.ovalClip}>
         <img src={`${API_BASE}${char.imagePath}`} alt={char.displayName} draggable={false} className={styles.ovalImg} />
       </div>
-      <div className={styles.ovalLabel}>{char.displayName}</div>
     </div>
   );
 }
@@ -318,7 +317,7 @@ export default function Draft() {
                   return (
                     <OvalCard key={c.codename} char={c} state={cstate}
                       rowIndex={rowIndex}
-                      maxRowIndex={GRID_CENTER.length - 1}
+                      maxRowIndex={codenames.length - 1}
                       onClick={isClickable ? () => { if (phase === "ban") handleBan(c.codename); else handlePickSelect(c.codename); } : undefined}
                     />
                   );
