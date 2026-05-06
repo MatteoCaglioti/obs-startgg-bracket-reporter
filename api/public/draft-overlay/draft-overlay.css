@@ -111,25 +111,22 @@ body {
   /* height set by JS; width is natural (driven by image aspect ratio) */
 }
 
-/* Picks: overlap each subsequent icon leftward */
-.picks .char-slot + .char-slot {
-  margin-left: -88px;
-}
-
-/* Bans: no overlap, small gap, uniform size */
-.bans .char-slot + .char-slot {
-  margin-left: -24px;
-}
-
+/* Slot width is set by JS to a fixed step size; images bleed out via overflow:visible.
+   No margin-based overlap needed — spacing is center-to-center by construction. */
 .char-slot img {
+  /* Absolutely centered so the portrait bleeds symmetrically outside the fixed-width slot.
+     This ensures center-to-center spacing is constant regardless of portrait aspect ratio. */
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   height: 100%;
   width: auto;
   display: block;
 }
 
-/* Left panel portraits: horizontally mirrored */
+/* Left panel portraits: horizontally mirrored — must include the centering translateX */
 #panel-a .char-slot img {
-  transform: scaleX(-1);
+  transform: translateX(-50%) scaleX(-1);
 }
 
 

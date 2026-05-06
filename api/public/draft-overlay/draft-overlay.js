@@ -21,8 +21,12 @@ const knownChars = new Map([
   [bansB,  new Set()],
 ]);
 
-const PICK_BASE = { w: 210, h: 263 };
-const BAN_BASE  = { w: 120, h: 150 };
+const PICK_BASE = { h: 263 };
+const BAN_BASE  = { h: 150 };
+// Center-to-center step: slot is this wide regardless of portrait aspect ratio.
+// Portraits wider than their step bleed outside the slot (overflow: visible).
+const PICK_STEP = 110;
+const BAN_STEP  = 85;
 
 /**
  * Render character slots into a container.
@@ -37,7 +41,7 @@ const BAN_BASE  = { w: 120, h: 150 };
  * Animation: only new characters (not yet in knownChars) receive the .filled
  *   class that triggers the pop-in animation.
  */
-function renderSlots(container, chars, isRight, base, progressive = true) {
+function renderSlots(container, chars, isRight, base, step, progressive = true) {
   const known   = knownChars.get(container);
   const current = new Set(chars.map(c => c.codename));
 
@@ -56,6 +60,7 @@ function renderSlots(container, chars, isRight, base, progressive = true) {
     // outerDist: 0 = outermost (edge of screen), increases toward center
     const outerDist = progressive ? (isRight ? (n - 1 - i) : i) : 0;
     const scale = Math.pow(0.9, outerDist);
+    const w     = Math.round(step * scale);  // fixed step width → constant center-to-center
     const h     = Math.round(base.h * scale);
 
     // Outer character has highest z-index so it renders over inner ones
@@ -66,7 +71,7 @@ function renderSlots(container, chars, isRight, base, progressive = true) {
 
     const slot = document.createElement('div');
     slot.className = isNew ? 'char-slot filled' : 'char-slot';
-    slot.style.cssText = `height:${h}px;z-index:${zIdx};`;
+    slot.style.cssText = `width:${w}px;height:${h}px;z-index:${zIdx};`;
 
     const img = document.createElement('img');
     img.src = `${API_BASE}${char.imagePath}`;
@@ -98,10 +103,10 @@ socket.on('draft:update', (state) => {
   // rpsWinner: 1 → team1 = teamA (first pick); 2 → team2 = teamA (first pick)
   const leftIsA = !state.rpsWinner || state.rpsWinner === 1;
 
-  renderSlots(picksA, (leftIsA ? state.teamAPicks : state.teamBPicks).map(find).filter(Boolean), false, PICK_BASE, true);
-  renderSlots(bansA,  (leftIsA ? state.teamABans  : state.teamBBans ).map(find).filter(Boolean), false, BAN_BASE,  true);
-  renderSlots(picksB, (leftIsA ? state.teamBPicks : state.teamAPicks).map(find).filter(Boolean), true,  PICK_BASE, true);
-  renderSlots(bansB,  (leftIsA ? state.teamBBans  : state.teamABans ).map(find).filter(Boolean), true,  BAN_BASE,  true);
+  renderSlots(picksA, (leftIsA ? state.teamAPicks : state.teamBPicks).map(find).filter(Boolean), false, PICK_BASE, PICK_STEP, true);
+  renderSlots(bansA,  (leftIsA ? state.teamABans  : state.teamBBans ).map(find).filter(Boolean), false, BAN_BASE,  BAN_STEP,  true);
+  renderSlots(picksB, (leftIsA ? state.teamBPicks : state.teamAPicks).map(find).filter(Boolean), true,  PICK_BASE, PICK_STEP, true);
+  renderSlots(bansB,  (leftIsA ? state.teamBBans  : state.teamABans ).map(find).filter(Boolean), true,  BAN_BASE,  BAN_STEP,  true);
 
   firstPickA.classList.toggle('hidden', state.rpsWinner !== 1);
   firstPickB.classList.toggle('hidden', state.rpsWinner !== 2);
