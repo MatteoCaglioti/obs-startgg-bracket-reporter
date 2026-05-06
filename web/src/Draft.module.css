@@ -293,7 +293,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center center;
+  object-position: center 30%;
   transform: rotate(calc(-1 * var(--oval-rotate))) scale(1.1);
   transform-origin: 50% 50%;
   display: block;
