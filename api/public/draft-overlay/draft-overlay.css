@@ -111,7 +111,7 @@ body {
 
 /* Bans: no overlap, small gap, uniform size */
 .bans .char-slot + .char-slot {
-  margin-left: 6px;
+  margin-left: -24px;
 }
 
 .char-slot img {
