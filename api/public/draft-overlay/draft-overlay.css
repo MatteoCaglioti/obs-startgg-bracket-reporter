@@ -249,11 +249,11 @@ body {
   justify-content: flex-end;
 }
 
-/* Ban bar: 25% of the way to viewport center (center = 50vw from each edge) */
-.ban-section  .section-label { width: 15.6vw; }
+/* Ban bar: 60% of the way to viewport center */
+.ban-section  .section-label { width: 30vw; }
 
-/* Pick bar: 75% of the way to viewport center */
-.pick-section .section-label { width: 46.9vw; }
+/* Pick bar: 80% of the way to viewport center */
+.pick-section .section-label { width: 40vw; }
 
 /* ── Center status ──────────────────────────────────────────────────────── */
 
