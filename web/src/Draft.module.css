@@ -88,12 +88,30 @@
   overflow-y: auto;
   background: #111;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
+/* ── Character grid — SF3TS staggered 3-column layout ─────────────────────── */
+
 .charGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 10px;
+  display: flex;
+  gap: var(--col-gap, 12px);
+  align-items: flex-start;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.gridCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--icon-gap, 8px);
+}
+
+/* Center column protrudes half an icon above and below — pulled up by half a slot */
+.gridColCenter {
+  margin-top: calc(-0.5 * (var(--oval-h, 94px) + var(--icon-gap, 8px)));
 }
 
 .confirmRow {
@@ -221,7 +239,86 @@
   flex-shrink: 0;
 }
 
-/* ── CharCard ─────────────────────────────────────────────────────────────── */
+/* ── OvalCard — main character selection grid ─────────────────────────────── */
+
+:root {
+  --oval-w:      76px;
+  --oval-h:      94px;
+  --oval-rotate: -12deg;
+  --icon-gap:    8px;
+  --col-gap:     14px;
+}
+
+.ovalCard {
+  position: relative;
+  width: var(--oval-w);
+  height: var(--oval-h);
+  flex-shrink: 0;
+  cursor: default;
+  /* Extra space below for the name label */
+  margin-bottom: 14px;
+}
+
+.ovalCardClickable { cursor: pointer; }
+
+/* The oval clip — border-radius + overflow creates the ellipse, then we rotate it */
+.ovalClip {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  transform: rotate(var(--oval-rotate));
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  transition: box-shadow 0.2s, filter 0.2s, transform 0.12s;
+}
+
+/* Hover/active via parent class so the full card area is the hit target */
+.ovalCardClickable:hover  .ovalClip { filter: brightness(1.25); }
+.ovalCardClickable:active .ovalClip { transform: rotate(var(--oval-rotate)) scale(0.93); }
+
+.ovalImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  /* Counter-rotate and scale up so the portrait appears upright inside the oval */
+  transform: rotate(calc(-1 * var(--oval-rotate))) scale(1.4);
+  transform-origin: 50% 20%;
+  display: block;
+  pointer-events: none;
+}
+
+.ovalLabel {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.65);
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95);
+  pointer-events: none;
+}
+
+/* ── State variants ── */
+
+.ovalCardBanned .ovalClip {
+  filter: grayscale(1) brightness(0.3);
+}
+
+/* --team-color set inline on the element */
+.ovalCardPicked .ovalClip {
+  box-shadow: 0 0 0 2px var(--team-color), 0 0 14px var(--team-color);
+  border-color: var(--team-color);
+}
+
+.ovalCardSelected .ovalClip {
+  box-shadow: 0 0 0 2px #fff, 0 0 22px rgba(255, 255, 255, 0.8);
+  border-color: #fff;
+}
+
+
 
 .charCard {
   position: relative;

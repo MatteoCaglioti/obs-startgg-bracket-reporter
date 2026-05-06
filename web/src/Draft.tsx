@@ -7,6 +7,11 @@ const API_BASE = "http://localhost:3001";
 const TEAM_A_COLOR = "#ff7a6d";
 const TEAM_B_COLOR = "#29b6f6";
 
+// Character grid column order — matches SF3TS character select layout
+const GRID_LEFT   = ["Akuma",  "Urien",  "Necro",   "Ibuki",  "Sean",   "Alex"];
+const GRID_CENTER = ["Yun",    "Remy",   "Q",        "Chun-Li","Makoto", "Twelve", "Yang"];
+const GRID_RIGHT  = ["Ryu",    "Oro",    "Dudley",   "Elena",  "Hugo",   "Ken"];
+
 // ── API helpers ──────────────────────────────────────────────────────────────
 
 async function draftPost(endpoint: string, body?: object): Promise<DraftState> {
@@ -61,6 +66,45 @@ function CharCard({ char, state, onClick, size = 90 }: CharCardProps) {
       <img src={`${API_BASE}${char.imagePath}`} alt={char.displayName} draggable={false} className={styles.charCardImg} />
       <div className={styles.charCardLabel}>{char.displayName}</div>
       {isSelected && <div className={styles.charCardSelectedOverlay} />}
+    </div>
+  );
+}
+
+// ── Oval card — main character selection grid ────────────────────────────────
+
+interface OvalCardProps {
+  char: DraftCharacter;
+  state: CharState;
+  onClick?: () => void;
+}
+
+function OvalCard({ char, state, onClick }: OvalCardProps) {
+  const isBanned      = state === "banned";
+  const isPickedA     = state === "pickedA";
+  const isPickedB     = state === "pickedB";
+  const isSelected    = state === "selected";
+  const isUnavailable = isBanned || isPickedA || isPickedB;
+  const isClickable   = !isUnavailable && !!onClick;
+
+  const stateClass = isBanned   ? styles.ovalCardBanned
+    : isPickedA                 ? styles.ovalCardPicked
+    : isPickedB                 ? styles.ovalCardPicked
+    : isSelected                ? styles.ovalCardSelected
+    : "";
+
+  const teamColor = isPickedA ? TEAM_A_COLOR : isPickedB ? TEAM_B_COLOR : undefined;
+
+  return (
+    <div
+      onClick={isClickable ? onClick : undefined}
+      title={char.displayName}
+      className={`${styles.ovalCard} ${isClickable ? styles.ovalCardClickable : ""} ${stateClass}`}
+      style={teamColor ? { "--team-color": teamColor } as React.CSSProperties : undefined}
+    >
+      <div className={styles.ovalClip}>
+        <img src={`${API_BASE}${char.imagePath}`} alt={char.displayName} draggable={false} className={styles.ovalImg} />
+      </div>
+      <div className={styles.ovalLabel}>{char.displayName}</div>
     </div>
   );
 }
@@ -255,15 +299,25 @@ export default function Draft() {
         </div>
         <div className={styles.gridArea}>
           <div className={styles.charGrid}>
-            {allChars.map(c => {
-              const cstate = getCharState(c.codename);
-              const isClickable = cstate === "normal" || (phase === "pick" && cstate === "selected");
-              return (
-                <CharCard key={c.codename} char={c} state={cstate} size={90}
-                  onClick={isClickable ? () => { if (phase === "ban") handleBan(c.codename); else handlePickSelect(c.codename); } : undefined}
-                />
-              );
-            })}
+            {([
+              { codenames: GRID_LEFT,   colClass: styles.gridCol },
+              { codenames: GRID_CENTER, colClass: `${styles.gridCol} ${styles.gridColCenter}` },
+              { codenames: GRID_RIGHT,  colClass: styles.gridCol },
+            ] as const).map(({ codenames, colClass }, colIdx) => (
+              <div key={colIdx} className={colClass}>
+                {codenames.map(codename => {
+                  const c = allChars.find(ch => ch.codename === codename);
+                  if (!c) return null;
+                  const cstate = getCharState(c.codename);
+                  const isClickable = cstate === "normal" || (phase === "pick" && cstate === "selected");
+                  return (
+                    <OvalCard key={c.codename} char={c} state={cstate}
+                      onClick={isClickable ? () => { if (phase === "ban") handleBan(c.codename); else handlePickSelect(c.codename); } : undefined}
+                    />
+                  );
+                })}
+              </div>
+            ))}
           </div>
           {phase === "pick" && selectedChar && (
             <div className={styles.confirmRow}>
