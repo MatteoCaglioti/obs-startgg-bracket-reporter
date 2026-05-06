@@ -17,6 +17,9 @@ import { getSets } from "./services/getSets";
 import { saveScoresToStartGG } from "./services/saveResult";
 import { mapSetToMatch } from "./services/mapToMatch";
 import { store } from "./core/store";
+import { draftStore } from "./core/draftStore";
+import { createStreamDeckRouter } from "./routes/streamdeck";
+import { createDraftRouter } from "./routes/draft";
 
 import type { TournamentStream } from "./core/types";
 import { getTournamentStreams } from "./services/getStreams";
@@ -44,6 +47,19 @@ app.use(
 );
 
 app.use(express.json());
+
+// ── Static assets (registered before SPA catch-all) ──────────────────────
+
+const publicBase = (process as any).pkg
+  ? path.join(path.dirname(process.execPath), "public")
+  : path.join(__dirname, "..", "public");
+
+const assetsBase = (process as any).pkg
+  ? path.join(path.dirname(process.execPath), "assets")
+  : path.join(__dirname, "..", "assets");
+
+app.use("/scoreboard", express.static(path.join(publicBase, "scoreboard")));
+app.use("/assets", express.static(assetsBase));
 
 app.get("/config", (_req, res) => {
   res.json({
@@ -76,23 +92,46 @@ app.post("/config", (req, res) => {
   res.json({ ok: true });
 });
 
-const isProd = (process as any).pkg || process.env.IS_PROD === "true";
-if (isProd) {
-  const webDistPath = path.join(__dirname, "../../web/dist");
-
-  app.use(express.static(webDistPath));
-
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(webDistPath, "index.html"));
-  });
-}
+// ── HTTP server + Socket.io (created early so routers can reference io) ────
 
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: ["http://localhost:5173", "http://localhost:3001"],
   },
+  transports: ["websocket", "polling"],
 });
+
+// ── Emit match state on every store change ────────────────────────────────
+
+store.subscribe((state) => {
+  io.emit("match:update", state);
+});
+
+// ── Draft + Stream Deck routes ────────────────────────────────────────────
+
+const { router: streamDeckRouter } = createStreamDeckRouter(io);
+app.use("/streamdeck", streamDeckRouter);
+app.use("/draft", createDraftRouter(io));
+
+// ── Send current state to newly connected clients ─────────────────────────
+
+io.on("connection", (socket) => {
+  socket.emit("match:update", store.getState());
+  socket.emit("draft:update", draftStore.getState());
+});
+
+// ── React SPA (prod only — must come AFTER specific routes) ───────────────
+
+const isProd = (process as any).pkg || process.env.IS_PROD === "true";
+if (isProd) {
+  const webDistPath = path.join(__dirname, "../../web/dist");
+  app.use(express.static(webDistPath));
+  // Exclude API, socket, scoreboard, assets paths from catch-all
+  app.get(/^(?!\/socket\.io|\/api|\/scoreboard|\/assets|\/streamdeck|\/draft).*/, (_req, res) => {
+    res.sendFile(path.join(webDistPath, "index.html"));
+  });
+}
 
 async function bootstrap() {
   if (!getStartggApiKey() || !getTournamentSlug()) {
@@ -115,6 +154,9 @@ async function refreshFromStartGG() {
 
   streams = freshStreams;
   store.mergeFromStartGG(matches);
+  // Emit updated match state to all connected clients
+  io.emit("match:update", store.getState());
+
   log(`Refreshed ${matches.length} matches`);
   log(`Refreshed ${freshStreams.length} streams`);
 

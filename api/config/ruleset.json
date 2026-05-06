@@ -1,0 +1,30 @@
+{
+  "name": "Character Draft",
+  "characters": [
+    { "codename": "Akuma",   "displayName": "Akuma",   "imagePath": "/assets/characters/sf3ts/Akuma.png" },
+    { "codename": "Alex",    "displayName": "Alex",    "imagePath": "/assets/characters/sf3ts/Alex.png" },
+    { "codename": "Chun-Li", "displayName": "Chun-Li", "imagePath": "/assets/characters/sf3ts/Chun-Li.png" },
+    { "codename": "Dudley",  "displayName": "Dudley",  "imagePath": "/assets/characters/sf3ts/Dudley.png" },
+    { "codename": "Elena",   "displayName": "Elena",   "imagePath": "/assets/characters/sf3ts/Elena.png" },
+    { "codename": "Hugo",    "displayName": "Hugo",    "imagePath": "/assets/characters/sf3ts/Hugo.png" },
+    { "codename": "Ibuki",   "displayName": "Ibuki",   "imagePath": "/assets/characters/sf3ts/Ibuki.png" },
+    { "codename": "Ken",     "displayName": "Ken",     "imagePath": "/assets/characters/sf3ts/Ken.png" },
+    { "codename": "Makoto",  "displayName": "Makoto",  "imagePath": "/assets/characters/sf3ts/Makoto.png" },
+    { "codename": "Necro",   "displayName": "Necro",   "imagePath": "/assets/characters/sf3ts/Necro.png" },
+    { "codename": "Oro",     "displayName": "Oro",     "imagePath": "/assets/characters/sf3ts/Oro.png" },
+    { "codename": "Q",       "displayName": "Q",       "imagePath": "/assets/characters/sf3ts/Q.png" },
+    { "codename": "Remy",    "displayName": "Remy",    "imagePath": "/assets/characters/sf3ts/Remy.png" },
+    { "codename": "Ryu",     "displayName": "Ryu",     "imagePath": "/assets/characters/sf3ts/Ryu.png" },
+    { "codename": "Sean",    "displayName": "Sean",    "imagePath": "/assets/characters/sf3ts/Sean.png" },
+    { "codename": "Twelve",  "displayName": "Twelve",  "imagePath": "/assets/characters/sf3ts/Twelve.png" },
+    { "codename": "Urien",   "displayName": "Urien",   "imagePath": "/assets/characters/sf3ts/Urien.png" },
+    { "codename": "Yang",    "displayName": "Yang",    "imagePath": "/assets/characters/sf3ts/Yang.png" },
+    { "codename": "Yun",     "displayName": "Yun",     "imagePath": "/assets/characters/sf3ts/Yun.png" }
+  ],
+  "strikeOrder": [1, 2, 1, 0, 1, 2, 2, 1],
+  "banCount": 0,
+  "totalBans": 4,
+  "totalPicks": 6,
+  "useDSR": false,
+  "useMDSR": false
+}

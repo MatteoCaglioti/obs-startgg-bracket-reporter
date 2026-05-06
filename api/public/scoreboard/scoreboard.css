@@ -1,0 +1,260 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Barlow Condensed", sans-serif;
+  background: transparent;
+  width: 1920px;
+  height: 1080px;
+  overflow: hidden;
+  /* OBS: set background colour to transparent / chroma key not needed */
+}
+
+/* ── Visibility ──────────────────────────────────────────────────────────── */
+
+.root {
+  position: absolute;
+  inset: 0;
+  filter:
+    drop-shadow(0 2px 4px rgba(0,0,0,0.35))
+    drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+}
+
+.root.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.root.visible {
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+/* ── Slide-in animation ──────────────────────────────────────────────────── */
+
+.anim-outer {
+  position: absolute;
+  inset: 0;
+  /* Slide in from above on page load */
+  animation: slideDown 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-140px); opacity: 0; }
+  to   { transform: translateY(0);      opacity: 1; }
+}
+
+/* ── Logo / brand zone ───────────────────────────────────────────────────── */
+
+.logo-zone {
+  position: absolute;
+  left: 800px;
+  top: 0;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo-bg {
+  width: 320px;
+  height: 110px;
+  background: linear-gradient(90deg, rgba(54,46,99,0.95) 0%, rgba(92,51,117,0.95) 100%);
+  border-bottom-left-radius: 15px;
+  border-bottom-right-radius: 15px;
+}
+
+.match-pill {
+  position: absolute;
+  top: 74px;
+  width: 180px;
+  min-height: 32px;
+  background: linear-gradient(90deg, rgba(139,42,117,1) 0%, rgba(208,10,105,1) 100%);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: opacity 0.3s ease;
+}
+
+.match-pill.empty {
+  opacity: 0;
+}
+
+.match-pill span {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-align: center;
+  padding: 0 8px;
+}
+
+/* ── Player bars ─────────────────────────────────────────────────────────── */
+
+.player-bar {
+  position: absolute;
+  top: 26px;
+  width: 295px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+  overflow: visible;
+}
+
+.player-bar.p1 {
+  left: 500px;
+  flex-direction: row-reverse;
+}
+
+.player-bar.p2 {
+  right: 500px;
+  flex-direction: row;
+}
+
+.player-inner {
+  position: relative;
+  width: 255px;
+  height: 52px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.p1 .player-inner {
+  flex-direction: row-reverse;
+  background: linear-gradient(90deg, rgba(79,76,131,1) 0%, rgba(82,122,160,1) 100%);
+  padding-right: 44px;
+}
+
+.p2 .player-inner {
+  flex-direction: row;
+  background: linear-gradient(270deg, rgba(79,76,131,1) 0%, rgba(82,122,160,1) 100%);
+  padding-left: 44px;
+}
+
+/* ── Sponsor logo (watermark behind name) ───────────────────────────────── */
+
+.sponsor-bg {
+  position: absolute;
+  width: 118px;
+  height: 118px;
+  opacity: 0.15;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.p1 .sponsor-bg { right: 0; }
+.p2 .sponsor-bg { left: 0; }
+
+/* ── Flag ────────────────────────────────────────────────────────────────── */
+
+.flag {
+  width: 30px;
+  height: 30px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+.p1 .flag { margin-left: 18px; }
+.p2 .flag { margin-right: 18px; }
+
+/* ── Player name ─────────────────────────────────────────────────────────── */
+
+.player-name {
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  transition: opacity 0.2s ease;
+  letter-spacing: 0.02em;
+}
+
+.p1 .player-name { margin-left: 18px; text-align: right; }
+.p2 .player-name { margin-right: 18px; text-align: left; }
+
+.player-name.changing { opacity: 0; }
+
+/* ── Losers badge ────────────────────────────────────────────────────────── */
+
+.losers-badge {
+  position: absolute;
+  width: 70px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.p1 .losers-badge {
+  left: 0;
+  background: linear-gradient(90deg, rgba(54,46,99,1) 0%, rgba(92,51,117,1) 100%);
+}
+
+.p2 .losers-badge {
+  right: 0;
+  background: linear-gradient(270deg, rgba(54,46,99,1) 0%, rgba(92,51,117,1) 100%);
+}
+
+.losers-badge.visible { opacity: 1; }
+
+/* ── Score boxes ─────────────────────────────────────────────────────────── */
+
+.score-box {
+  position: absolute;
+  top: 26px;
+  width: 52px;
+  height: 52px;
+  border-radius: 5px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.score-box.p1 { left: 769px; }
+.score-box.p2 { right: 769px; }
+
+.score-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #111;
+  line-height: 1;
+  display: block;
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Score flash animation — toggled via JS */
+.score-value.flash {
+  animation: scoreFlash 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes scoreFlash {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.45); }
+  100% { transform: scale(1); }
+}
+
+/* Score colour customisation (set by JS via CSS vars) */
+.score-box.p1 { background: var(--p1-score-bg, #fff); }
+.score-box.p2 { background: var(--p2-score-bg, #fff); }

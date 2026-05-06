@@ -23,6 +23,9 @@
       "api/dist/**/*",
       "api/package.json",
       "api/node_modules/**/*",
+      "api/public/**/*",
+      "api/assets/**/*",
+      "api/config/**/*",
       "web/dist/**/*"
     ],
     "win": {
