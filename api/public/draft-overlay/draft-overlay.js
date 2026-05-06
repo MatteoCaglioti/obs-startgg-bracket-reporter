@@ -56,7 +56,7 @@ function renderSlots(container, chars, isRight, base, progressive = true) {
     // outerDist: 0 = outermost (edge of screen), increases toward center
     const outerDist = progressive ? (isRight ? (n - 1 - i) : i) : 0;
     const scale = Math.pow(0.9, outerDist);
-    const w     = base.h;                   // step = outermost portrait height (constant, unscaled)
+    const w     = Math.round(base.h / 2);   // step = half of outermost portrait height
     const h     = Math.round(base.h * scale);
 
     // Outer character has highest z-index so it renders over inner ones
