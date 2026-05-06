@@ -56,7 +56,6 @@ function renderSlots(container, chars, isRight, base, progressive = true) {
     // outerDist: 0 = outermost (edge of screen), increases toward center
     const outerDist = progressive ? (isRight ? (n - 1 - i) : i) : 0;
     const scale = Math.pow(0.9, outerDist);
-    const w     = Math.round(base.w * scale);
     const h     = Math.round(base.h * scale);
 
     // Outer character has highest z-index so it renders over inner ones
@@ -67,7 +66,7 @@ function renderSlots(container, chars, isRight, base, progressive = true) {
 
     const slot = document.createElement('div');
     slot.className = isNew ? 'char-slot filled' : 'char-slot';
-    slot.style.cssText = `width:${w}px;height:${h}px;z-index:${zIdx};`;
+    slot.style.cssText = `height:${h}px;z-index:${zIdx};`;
 
     const img = document.createElement('img');
     img.src = `${API_BASE}${char.imagePath}`;
