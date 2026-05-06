@@ -21,8 +21,11 @@ const knownChars = new Map([
   [bansB,  new Set()],
 ]);
 
-const PICK_BASE = { h: 263 };
-const BAN_BASE  = { h: 150 };
+// maxWidthRatio: max-width as a fraction of portrait height.
+// Controls how much wide portraits (Hugo, Q, etc.) affect center-to-center spacing.
+// Tune this to taste — 0.5 = half the portrait height, 1.0 = no capping.
+const PICK_BASE = { h: 263, maxWidthRatio: 0.5 };
+const BAN_BASE  = { h: 150, maxWidthRatio: 0.5 };
 
 /**
  * Render character slots into a container.
@@ -55,8 +58,9 @@ function renderSlots(container, chars, isRight, base, progressive = true) {
 
     // outerDist: 0 = outermost (edge of screen), increases toward center
     const outerDist = progressive ? (isRight ? (n - 1 - i) : i) : 0;
-    const scale = Math.pow(0.9, outerDist);
-    const h     = Math.round(base.h * scale);
+    const scale  = Math.pow(0.9, outerDist);
+    const h      = Math.round(base.h * scale);
+    const maxW   = base.maxWidthRatio ? Math.round(h * base.maxWidthRatio) : '';
 
     // Outer character has highest z-index so it renders over inner ones
     // For non-progressive (bans), all slots get z-index 1
@@ -66,7 +70,7 @@ function renderSlots(container, chars, isRight, base, progressive = true) {
 
     const slot = document.createElement('div');
     slot.className = isNew ? 'char-slot filled' : 'char-slot';
-    slot.style.cssText = `height:${h}px;z-index:${zIdx};`;
+    slot.style.cssText = `height:${h}px;z-index:${zIdx};${maxW ? `max-width:${maxW}px;` : ''}`;
 
     const img = document.createElement('img');
     img.src = `${API_BASE}${char.imagePath}`;

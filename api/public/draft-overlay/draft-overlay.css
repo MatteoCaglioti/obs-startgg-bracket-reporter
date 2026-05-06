@@ -112,7 +112,7 @@ body {
   overflow: visible;
   position: relative;
   flex-shrink: 0;
-  /* height set by JS; max-width caps layout width of wide portraits only */
+  /* height and max-width set proportionally by JS */
 }
 
 /* Picks: overlap each subsequent icon leftward */
@@ -124,10 +124,6 @@ body {
 .bans .char-slot + .char-slot {
   margin-left: -24px;
 }
-
-/* Cap wide portraits; narrower ones are unaffected (natural width < max) */
-.picks .char-slot { max-width: 120px; }
-.bans  .char-slot { max-width: 80px; }
 
 .char-slot img {
   height: 100%;
