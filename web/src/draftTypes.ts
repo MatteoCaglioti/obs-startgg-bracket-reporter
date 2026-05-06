@@ -4,32 +4,28 @@ export interface DraftCharacter {
   imagePath: string;
 }
 
-export interface Ruleset {
+export interface DraftRuleset {
   name: string;
+  teamSize: number;
+  banOrder: number[];
+  pickOrder: number[];
   characters: DraftCharacter[];
-  strikeOrder: number[];
-  banCount: number;
-  totalBans: number;
-  totalPicks: number;
-  useDSR: boolean;
-  useMDSR: boolean;
 }
 
 export interface DraftState {
-  matchId: string | null;
-  p1Name: string;
-  p2Name: string;
-  ruleset: Ruleset | null;
-  currGame: number;
-  currPlayer: number;
-  currStep: number;
-  phase: "ban" | "pick" | "complete";
-  strikedStages: Record<number, string[]>;
-  strikedBy: [string[], string[]];
-  charactersPicked: string[];
-  selectedCharacter: string | null;
-  lastWinner: number;
-  gentlemans: boolean;
+  phase: "idle" | "rps" | "ban" | "pick" | "complete";
+  pendingTeam1Name: string;
+  pendingTeam2Name: string;
+  teamAName: string;
+  teamBName: string;
+  teamABans: string[];
+  teamBBans: string[];
+  teamAPicks: string[];
+  teamBPicks: string[];
+  currentStep: number;
+  currentTeam: 0 | 1 | null;
+  ruleset: DraftRuleset | null;
   canUndo: boolean;
   canRedo: boolean;
 }
+

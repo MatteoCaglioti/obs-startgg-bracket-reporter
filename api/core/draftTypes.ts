@@ -4,35 +4,28 @@ export interface DraftCharacter {
   imagePath: string;
 }
 
-export interface Ruleset {
+export interface DraftRuleset {
   name: string;
+  teamSize: number;
+  banOrder: number[]; // 0=teamA, 1=teamB for each ban step
+  pickOrder: number[]; // 0=teamA, 1=teamB for each pick step
   characters: DraftCharacter[];
-  strikeOrder: number[];
-  banCount: number;
-  totalBans: number;
-  totalPicks: number;
-  useDSR: boolean;
-  useMDSR: boolean;
 }
 
 export interface DraftState {
-  matchId: string | null;
-  p1Name: string;
-  p2Name: string;
-  ruleset: Ruleset | null;
-  currGame: number;
-  currPlayer: number;       // 0 = P1, 1 = P2, -1 = not started
-  currStep: number;
-  phase: "ban" | "pick" | "complete";
-  // strikedStages[step] = array of codenames selected during that step
-  strikedStages: Record<number, string[]>;
-  // strikedBy[0] = all codenames selected by P1, strikedBy[1] = by P2
-  strikedBy: [string[], string[]];
-  // ordered list of picked characters (for all games)
-  charactersPicked: string[];
-  selectedCharacter: string | null;  // highlighted pick (not yet confirmed)
-  lastWinner: number;                // -1 if no game won yet
-  gentlemans: boolean;
+  phase: "idle" | "rps" | "ban" | "pick" | "complete";
+  pendingTeam1Name: string;
+  pendingTeam2Name: string;
+  teamAName: string;
+  teamBName: string;
+  teamABans: string[];
+  teamBBans: string[];
+  teamAPicks: string[];
+  teamBPicks: string[];
+  currentStep: number;
+  currentTeam: 0 | 1 | null;
+  ruleset: DraftRuleset | null;
   canUndo: boolean;
   canRedo: boolean;
 }
+

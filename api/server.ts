@@ -50,15 +50,18 @@ app.use(express.json());
 
 // ── Static assets (registered before SPA catch-all) ──────────────────────
 
-const publicBase = (process as any).pkg
-  ? path.join(path.dirname(process.execPath), "public")
-  : path.join(__dirname, "..", "public");
+const apiRoot = (process as any).pkg
+  ? path.dirname(process.execPath)
+  : path.basename(__dirname) === "dist"
+    ? path.join(__dirname, "..")
+    : __dirname;
 
-const assetsBase = (process as any).pkg
-  ? path.join(path.dirname(process.execPath), "assets")
-  : path.join(__dirname, "..", "assets");
+const publicBase = path.join(apiRoot, "public");
+const assetsBase = path.join(apiRoot, "assets");
+const configBase = path.join(apiRoot, "config");
 
 app.use("/scoreboard", express.static(path.join(publicBase, "scoreboard")));
+app.use("/draft-overlay", express.static(path.join(publicBase, "draft-overlay")));
 app.use("/assets", express.static(assetsBase));
 
 app.get("/config", (_req, res) => {
@@ -127,8 +130,8 @@ const isProd = (process as any).pkg || process.env.IS_PROD === "true";
 if (isProd) {
   const webDistPath = path.join(__dirname, "../../web/dist");
   app.use(express.static(webDistPath));
-  // Exclude API, socket, scoreboard, assets paths from catch-all
-  app.get(/^(?!\/socket\.io|\/api|\/scoreboard|\/assets|\/streamdeck|\/draft).*/, (_req, res) => {
+  // Exclude API, socket, scoreboard, draft-overlay, assets paths from catch-all
+  app.get(/^(?!\/socket\.io|\/api|\/scoreboard|\/draft-overlay|\/assets|\/streamdeck|\/draft).*/, (_req, res) => {
     res.sendFile(path.join(webDistPath, "index.html"));
   });
 }

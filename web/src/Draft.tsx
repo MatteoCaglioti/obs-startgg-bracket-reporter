@@ -1,13 +1,15 @@
-import { useEffect, useState, useCallback } from "react";
-import type { DraftState } from "./draftTypes";
+import { useEffect, useState, useCallback, useRef } from "react";
+import type { DraftState, DraftCharacter } from "./draftTypes";
 import { io, Socket } from "socket.io-client";
 
 const API_BASE = "http://localhost:3001";
+const TEAM_A_COLOR = "#ff7a6d";
+const TEAM_B_COLOR = "#29b6f6";
 
 // ── API helpers ──────────────────────────────────────────────────────────────
 
-async function draftPost(path: string, body?: object): Promise<DraftState> {
-  const res = await fetch(`${API_BASE}/draft${path}`, {
+async function draftPost(endpoint: string, body?: object): Promise<DraftState> {
+  const res = await fetch(`${API_BASE}/draft${endpoint}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
@@ -19,74 +21,243 @@ async function draftPost(path: string, body?: object): Promise<DraftState> {
   return res.json();
 }
 
-// ── Sub-components ───────────────────────────────────────────────────────────
+// ── Style helpers ────────────────────────────────────────────────────────────
 
-interface CharCardProps {
-  codename: string;
-  displayName: string;
-  imagePath: string;
-  state: "normal" | "banned" | "picked" | "selected" | "unavailable";
-  bannedBy?: 0 | 1;
-  pickedBy?: 0 | 1;
-  onClick?: () => void;
+function btn(variant: "primary" | "secondary" | "ghost" | "danger" | "teamA" | "teamB"): React.CSSProperties {
+  const base: React.CSSProperties = {
+    border: "none", borderRadius: 8, padding: "10px 20px",
+    fontSize: 14, fontWeight: 700, cursor: "pointer",
+    transition: "opacity 0.15s, transform 0.1s", minHeight: 44,
+  };
+  const v: Record<string, React.CSSProperties> = {
+    primary:   { background: "#0066cc", color: "#fff" },
+    secondary: { background: "#2c2c2c", color: "#ccc" },
+    ghost:     { background: "transparent", color: "#888", border: "1px solid #333" },
+    danger:    { background: "#7a1a1a", color: "#fff" },
+    teamA:     { background: TEAM_A_COLOR, color: "#000" },
+    teamB:     { background: TEAM_B_COLOR, color: "#000" },
+  };
+  return { ...base, ...v[variant] };
 }
 
-function CharCard({ displayName, imagePath, state, bannedBy, pickedBy, onClick }: CharCardProps) {
-  const p1Color = "#ff7a6d";
-  const p2Color = "#29b6f6";
+// ── Character card ────────────────────────────────────────────────────────────
 
-  const borderColor =
-    state === "selected"  ? "#fff" :
-    state === "picked"    ? (pickedBy === 0 ? p1Color : p2Color) :
-    state === "banned"    ? (bannedBy === 0 ? p1Color : p2Color) :
-    "transparent";
+type CharState = "normal" | "banned" | "pickedA" | "pickedB" | "selected";
 
-  const opacity = state === "banned" || state === "unavailable" ? 0.35 : 1;
-  const grayscale = state === "banned" || state === "unavailable" ? 1 : 0;
-  const boxShadow = state === "picked"
-    ? `0 0 14px ${pickedBy === 0 ? p1Color : p2Color}`
-    : state === "selected"
-    ? "0 0 18px rgba(255,255,255,0.7)"
+interface CharCardProps {
+  char: DraftCharacter;
+  state: CharState;
+  onClick?: () => void;
+  size?: number;
+}
+
+function CharCard({ char, state, onClick, size = 90 }: CharCardProps) {
+  const isBanned = state === "banned";
+  const isPickedA = state === "pickedA";
+  const isPickedB = state === "pickedB";
+  const isSelected = state === "selected";
+  const isUnavailable = isBanned || isPickedA || isPickedB;
+
+  const borderColor = isSelected ? "#fff"
+    : isPickedA ? TEAM_A_COLOR
+    : isPickedB ? TEAM_B_COLOR
+    : "transparent";
+
+  const boxShadow = isSelected ? "0 0 20px rgba(255,255,255,0.8)"
+    : isPickedA ? `0 0 12px ${TEAM_A_COLOR}`
+    : isPickedB ? `0 0 12px ${TEAM_B_COLOR}`
     : "none";
-  const cursor = onClick && state !== "banned" && state !== "unavailable" ? "pointer" : "default";
 
   return (
     <div
-      onClick={onClick && state !== "banned" && state !== "unavailable" ? onClick : undefined}
+      onClick={!isUnavailable && onClick ? onClick : undefined}
+      title={char.displayName}
       style={{
         position: "relative",
-        border: `3px solid ${borderColor}`,
-        borderRadius: 8,
-        overflow: "hidden",
-        opacity,
-        filter: `grayscale(${grayscale})`,
+        width: size, height: size,
+        borderRadius: 8, overflow: "hidden",
+        border: `2px solid ${borderColor}`,
         boxShadow,
-        cursor,
-        transition: "opacity 0.25s, box-shadow 0.25s, border-color 0.25s",
-        aspectRatio: "1 / 1",
+        opacity: isBanned ? 0.35 : 1,
+        filter: isBanned ? "grayscale(1)" : "none",
+        cursor: !isUnavailable && onClick ? "pointer" : "default",
+        transition: "opacity 0.2s, box-shadow 0.2s, border-color 0.2s",
+        flexShrink: 0,
       }}
     >
       <img
-        src={`${API_BASE}${imagePath}`}
-        alt={displayName}
-        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }}
+        src={`${API_BASE}${char.imagePath}`}
+        alt={char.displayName}
         draggable={false}
+        style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top", display: "block" }}
       />
       <div style={{
         position: "absolute", bottom: 0, left: 0, right: 0,
-        background: "rgba(0,0,0,0.55)", padding: "3px 6px",
-        textAlign: "center", fontSize: 13, fontWeight: 700,
-        color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+        background: "rgba(0,0,0,0.6)", padding: "3px 4px",
+        textAlign: "center", fontSize: 10, fontWeight: 700, color: "#fff",
+        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
       }}>
-        {displayName}
+        {char.displayName}
       </div>
-      {state === "selected" && (
-        <div style={{
-          position: "absolute", inset: 0,
-          background: "rgba(255,255,255,0.08)",
-          pointerEvents: "none",
-        }} />
+      {isSelected && (
+        <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.1)", pointerEvents: "none" }} />
       )}
+    </div>
+  );
+}
+
+// ── Slot row (picks/bans sidebar) ─────────────────────────────────────────────
+
+function SlotRow({ chars, count, type, team }: {
+  chars: DraftCharacter[];
+  count: number;
+  type: "pick" | "ban";
+  team: "A" | "B";
+}) {
+  const color = team === "A" ? TEAM_A_COLOR : TEAM_B_COLOR;
+  const slots = Array.from({ length: count }, (_, i) => chars[i] ?? null);
+
+  return (
+    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      {slots.map((c, i) => c ? (
+        <CharCard
+          key={c.codename}
+          char={c}
+          state={type === "pick" ? (team === "A" ? "pickedA" : "pickedB") : "banned"}
+          size={52}
+        />
+      ) : (
+        <div key={i} style={{
+          width: 52, height: 52, borderRadius: 8,
+          border: "2px dashed #333",
+          background: "rgba(255,255,255,0.02)",
+          flexShrink: 0,
+        }} />
+      ))}
+    </div>
+  );
+}
+
+// ── Team column ───────────────────────────────────────────────────────────────
+
+function TeamColumn({ name, color, picks, bans, pickSlots, banSlots, allChars, isActive }: {
+  name: string;
+  color: string;
+  picks: string[];
+  bans: string[];
+  pickSlots: number;
+  banSlots: number;
+  allChars: DraftCharacter[];
+  isActive: boolean;
+}) {
+  const findChar = (codename: string) => allChars.find(c => c.codename === codename)!;
+  const pickChars = picks.map(findChar).filter(Boolean);
+  const banChars = bans.map(findChar).filter(Boolean);
+  const team = color === TEAM_A_COLOR ? "A" : "B";
+
+  return (
+    <div style={{
+      background: "#1a1a1a", borderRadius: 10, padding: "12px 14px",
+      border: `2px solid ${isActive ? color : "#2a2a2a"}`,
+      minWidth: 200, maxWidth: 280, flex: "0 0 auto",
+      transition: "border-color 0.3s",
+      boxShadow: isActive ? `0 0 16px ${color}44` : "none",
+    }}>
+      <div style={{ fontSize: 15, fontWeight: 800, color, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>
+        {name}
+        {isActive && <span style={{ fontSize: 10, marginLeft: 8, color: "#fff", background: color, padding: "2px 6px", borderRadius: 10, verticalAlign: "middle" }}>YOUR TURN</span>}
+      </div>
+      <div style={{ fontSize: 10, color: "#666", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Picks</div>
+      <SlotRow chars={pickChars} count={pickSlots} type="pick" team={team as "A" | "B"} />
+      <div style={{ fontSize: 10, color: "#666", textTransform: "uppercase", letterSpacing: 1, marginTop: 10, marginBottom: 6 }}>Bans</div>
+      <SlotRow chars={banChars} count={banSlots} type="ban" team={team as "A" | "B"} />
+    </div>
+  );
+}
+
+// ── Idle phase ────────────────────────────────────────────────────────────────
+
+function IdlePhase({ onStart, error }: { onStart: (t1: string, t2: string) => void; error: string | null }) {
+  const [t1, setT1] = useState("");
+  const [t2, setT2] = useState("");
+
+  const inputStyle: React.CSSProperties = {
+    background: "#1a1a1a", border: "1px solid #333", borderRadius: 8,
+    color: "#fff", padding: "10px 14px", fontSize: 16, width: "100%",
+    boxSizing: "border-box", outline: "none",
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 24 }}>
+      <div style={{ fontSize: 28, fontWeight: 800, color: "#fff", letterSpacing: 2 }}>SF3TS 3v3 DRAFT</div>
+      <div style={{ display: "flex", gap: 16, width: "100%", maxWidth: 520 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 11, color: TEAM_A_COLOR, marginBottom: 6, fontWeight: 700, textTransform: "uppercase" }}>Team 1</div>
+          <input style={inputStyle} value={t1} onChange={e => setT1(e.target.value)} placeholder="Team 1 name" />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 11, color: TEAM_B_COLOR, marginBottom: 6, fontWeight: 700, textTransform: "uppercase" }}>Team 2</div>
+          <input style={inputStyle} value={t2} onChange={e => setT2(e.target.value)} placeholder="Team 2 name" />
+        </div>
+      </div>
+      <button onClick={() => onStart(t1, t2)} style={{ ...btn("primary"), fontSize: 18, padding: "14px 48px", minWidth: 200 }}>
+        Start Draft
+      </button>
+      {error && <div style={{ color: "#f88", fontSize: 13 }}>{error}</div>}
+    </div>
+  );
+}
+
+// ── RPS phase ─────────────────────────────────────────────────────────────────
+
+function RpsPhase({ state, onWinner }: { state: DraftState; onWinner: (w: 1 | 2) => void }) {
+  const t1 = state.pendingTeam1Name || "Team 1";
+  const t2 = state.pendingTeam2Name || "Team 2";
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 32 }}>
+      <div style={{ fontSize: 22, fontWeight: 800, color: "#fff", textAlign: "center" }}>
+        Who won Rock Paper Scissors?
+      </div>
+      <div style={{ fontSize: 13, color: "#888", textAlign: "center" }}>The RPS winner chooses their team name and goes first in the draft.</div>
+      <div style={{ display: "flex", gap: 20 }}>
+        <button onClick={() => onWinner(1)} style={{ ...btn("teamA"), fontSize: 20, padding: "16px 40px", minWidth: 180 }}>
+          {t1}
+        </button>
+        <button onClick={() => onWinner(2)} style={{ ...btn("teamB"), fontSize: 20, padding: "16px 40px", minWidth: 180 }}>
+          {t2}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Complete phase ────────────────────────────────────────────────────────────
+
+function CompletePhase({ state, onRestart }: { state: DraftState; onRestart: () => void }) {
+  const { ruleset, teamAName, teamBName, teamAPicks, teamBPicks } = state;
+  if (!ruleset) return null;
+  const findChar = (codename: string) => ruleset.characters.find(c => c.codename === codename)!;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 32, padding: 20 }}>
+      <div style={{ fontSize: 24, fontWeight: 800, color: "#fff", letterSpacing: 2 }}>DRAFT COMPLETE</div>
+      <div style={{ display: "flex", gap: 40, flexWrap: "wrap", justifyContent: "center" }}>
+        {([["A", teamAName, teamAPicks, TEAM_A_COLOR], ["B", teamBName, teamBPicks, TEAM_B_COLOR]] as const).map(([team, name, picks, color]) => (
+          <div key={team} style={{ background: "#1a1a1a", border: `2px solid ${color}`, borderRadius: 12, padding: "20px 24px", textAlign: "center", minWidth: 220 }}>
+            <div style={{ fontSize: 18, fontWeight: 800, color, marginBottom: 16, textTransform: "uppercase" }}>{name}</div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+              {picks.map(codename => {
+                const c = findChar(codename);
+                return c ? <CharCard key={codename} char={c} state={team === "A" ? "pickedA" : "pickedB"} size={80} /> : null;
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+      <button onClick={onRestart} style={{ ...btn("secondary"), fontSize: 16, padding: "12px 36px" }}>
+        ↺ New Draft
+      </button>
     </div>
   );
 }
@@ -95,325 +266,250 @@ function CharCard({ displayName, imagePath, state, bannedBy, pickedBy, onClick }
 
 export default function Draft() {
   const [draft, setDraft] = useState<DraftState | null>(null);
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const [selectedChar, setSelectedChar] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const socketRef = useRef<Socket | null>(null);
 
-  const p1Color = "#ff7a6d";
-  const p2Color = "#29b6f6";
-
-  // ── Socket.io connection ──────────────────────────────────────────────────
+  // ── Socket.io ──────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    const s = io(API_BASE, { transports: ["websocket"] });
-    s.on("draft:update", (state: DraftState) => setDraft(state));
+    const s = io(API_BASE, { transports: ["websocket", "polling"], query: { stream: "default" } });
+    s.on("draft:update", (state: DraftState) => {
+      setDraft(state);
+      // Clear selection when phase changes or step advances
+      setSelectedChar(null);
+    });
     s.on("connect_error", () => setError("Cannot connect to server"));
-    setSocket(s);
+    socketRef.current = s;
+
+    // Fetch initial state
+    fetch(`${API_BASE}/draft`).then(r => r.json()).then(setDraft).catch(() => {});
+
     return () => { s.disconnect(); };
   }, []);
 
-  // ── Actions ───────────────────────────────────────────────────────────────
+  // ── Actions ────────────────────────────────────────────────────────────────
 
-  const startDraft = useCallback(async () => {
+  const handleStart = useCallback(async (team1Name: string, team2Name: string) => {
     try {
-      const state = await draftPost("/start");
+      const state = await draftPost("/start", { team1Name, team2Name });
       setDraft(state);
       setError(null);
-    } catch (e: any) {
-      setError(e.message);
-    }
+    } catch (e: any) { setError(e.message); }
   }, []);
 
-  const handleSelect = useCallback(async (codename: string) => {
-    try {
-      await draftPost("/select", { codename });
-    } catch { /* ignored — server will reject invalid selections */ }
+  const handleRpsWinner = useCallback(async (winner: 1 | 2) => {
+    try { await draftPost("/rps-winner", { winner }); }
+    catch (e: any) { setError(e.message); }
   }, []);
 
-  const handleConfirm = useCallback(async () => {
-    try {
-      await draftPost("/confirm");
-    } catch (e: any) {
-      setError(e.message);
-    }
+  const handleBan = useCallback(async (codename: string) => {
+    try { await draftPost("/ban", { codename }); }
+    catch (e: any) { setError(e.message); }
   }, []);
+
+  const handlePickSelect = useCallback((codename: string) => {
+    setSelectedChar(prev => prev === codename ? null : codename);
+  }, []);
+
+  const handlePickConfirm = useCallback(async () => {
+    if (!selectedChar) return;
+    try {
+      await draftPost("/pick", { codename: selectedChar });
+      setSelectedChar(null);
+    } catch (e: any) { setError(e.message); }
+  }, [selectedChar]);
 
   const handleUndo = useCallback(async () => {
-    try { await draftPost("/undo"); } catch { }
+    try { await draftPost("/undo"); setSelectedChar(null); } catch { }
   }, []);
 
   const handleRedo = useCallback(async () => {
-    try { await draftPost("/redo"); } catch { }
+    try { await draftPost("/redo"); setSelectedChar(null); } catch { }
   }, []);
 
   const handleRestart = useCallback(async () => {
-    try { await draftPost("/restart"); } catch { }
+    try { await draftPost("/restart"); setSelectedChar(null); } catch { }
   }, []);
 
-  const handleWinner = useCallback(async (winner: 0 | 1) => {
-    try { await draftPost("/match-winner", { winner }); } catch { }
-  }, []);
+  // ── Loading state ──────────────────────────────────────────────────────────
 
-  const handleGentlemans = useCallback(async () => {
-    try { await draftPost("/gentlemans"); } catch { }
-  }, []);
-
-  // ── Derived state ─────────────────────────────────────────────────────────
-
-  if (!draft || !draft.ruleset) {
+  if (!draft) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100vh", gap: 16 }}>
-        <p style={{ color: "#aaa" }}>No active draft.</p>
-        <button onClick={startDraft} style={btnStyle("primary")}>Start Draft</button>
-        {error && <p style={{ color: "#f66" }}>{error}</p>}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#0f0f0f", color: "#666" }}>
+        Connecting…
       </div>
     );
   }
 
-  const { ruleset, phase, currPlayer, p1Name, p2Name, strikedBy, selectedCharacter, gentlemans, canUndo, canRedo, currGame } = draft;
-  const chars = ruleset.characters;
+  const { phase, ruleset } = draft;
 
-  // Classify each character
-  const p1Bans = new Set<string>();
-  const p2Bans = new Set<string>();
-  const p1Picks = new Set<string>();
-  const p2Picks = new Set<string>();
+  const root: React.CSSProperties = {
+    display: "flex", flexDirection: "column", height: "100vh",
+    background: "#0f0f0f", color: "#fff", fontFamily: "'Segoe UI', sans-serif",
+    overflow: "hidden",
+  };
 
-  // Bans = first totalBans selections in strikedBy
-  const allSelections: { codename: string; player: number }[] = [];
-  const allSteps = Object.values(draft.strikedStages ?? {}) as string[][];
-  allSteps.forEach((stepArr) => stepArr.forEach((c) => {
-    const byP1 = strikedBy[0].includes(c);
-    allSelections.push({ codename: c, player: byP1 ? 0 : 1 });
-  }));
-
-  let banCount = 0;
-  for (const sel of allSelections) {
-    if (banCount < ruleset.totalBans) {
-      (sel.player === 0 ? p1Bans : p2Bans).add(sel.codename);
-      banCount++;
-    } else {
-      (sel.player === 0 ? p1Picks : p2Picks).add(sel.codename);
-    }
+  // ── Idle ───────────────────────────────────────────────────────────────────
+  if (phase === "idle") {
+    return (
+      <div style={root}>
+        <IdlePhase onStart={handleStart} error={error} />
+      </div>
+    );
   }
 
-  const allBanned = new Set([...p1Bans, ...p2Bans]);
-  const allPicked = new Set([...p1Picks, ...p2Picks]);
+  // ── RPS ────────────────────────────────────────────────────────────────────
+  if (phase === "rps") {
+    return (
+      <div style={root}>
+        <RpsPhase state={draft} onWinner={handleRpsWinner} />
+      </div>
+    );
+  }
 
-  function getCharState(codename: string): CharCardProps["state"] {
+  // ── Complete ───────────────────────────────────────────────────────────────
+  if (phase === "complete") {
+    return (
+      <div style={root}>
+        <CompletePhase state={draft} onRestart={handleRestart} />
+      </div>
+    );
+  }
+
+  // ── Ban / Pick phases ──────────────────────────────────────────────────────
+  if (!ruleset) return null;
+
+  const {
+    teamAName, teamBName,
+    teamABans, teamBBans, teamAPicks, teamBPicks,
+    currentTeam, canUndo, canRedo,
+  } = draft;
+
+  const allChars = ruleset.characters;
+  const allBanned = new Set([...teamABans, ...teamBBans]);
+  const allPicked = new Set([...teamAPicks, ...teamBPicks]);
+
+  const bansPerTeam = { a: 0, b: 0 };
+  ruleset.banOrder.forEach(t => t === 0 ? bansPerTeam.a++ : bansPerTeam.b++);
+
+  const actingName = currentTeam === 0 ? teamAName : teamBName;
+  const actingColor = currentTeam === 0 ? TEAM_A_COLOR : TEAM_B_COLOR;
+
+  let prompt = "";
+  if (phase === "ban") {
+    prompt = `${actingName}: Ban a character`;
+  } else if (phase === "pick") {
+    prompt = selectedChar ? `${actingName}: Confirm your pick` : `${actingName}: Pick a character`;
+  }
+
+  function getCharState(codename: string): CharState {
     if (allBanned.has(codename)) return "banned";
-    if (allPicked.has(codename)) return "picked";
-    if (selectedCharacter === codename) return "selected";
+    if (teamAPicks.includes(codename)) return "pickedA";
+    if (teamBPicks.includes(codename)) return "pickedB";
+    if (selectedChar === codename) return "selected";
     return "normal";
   }
 
-  function getBannedBy(codename: string): 0 | 1 | undefined {
-    if (p1Bans.has(codename)) return 0;
-    if (p2Bans.has(codename)) return 1;
-    return undefined;
-  }
-
-  function getPickedBy(codename: string): 0 | 1 | undefined {
-    if (p1Picks.has(codename)) return 0;
-    if (p2Picks.has(codename)) return 1;
-    return undefined;
-  }
-
-  // Prompt text
-  const playerName = currPlayer === 0 ? p1Name : currPlayer === 1 ? p2Name : null;
-  const currPlayerColor = currPlayer === 0 ? p1Color : p2Color;
-
-  let prompt = "";
-  if (phase === "complete") {
-    prompt = "Draft complete — good luck!";
-  } else if (gentlemans) {
-    prompt = "Gentleman's agreement — pick any character";
-  } else if (phase === "ban" && playerName) {
-    const needed = ruleset.strikeOrder[draft.currStep] ?? 0;
-    const currStepBans = (draft.strikedStages[draft.currStep] ?? []).length;
-    const remaining = needed - currStepBans;
-    prompt = remaining > 0
-      ? `${playerName}: ban ${remaining} character${remaining !== 1 ? "s" : ""}`
-      : `${playerName}: confirm bans`;
-  } else if (phase === "pick" && playerName) {
-    prompt = selectedCharacter
-      ? `${playerName}: confirm your pick`
-      : `${playerName}: pick a character`;
-  }
-
-  // Can confirm?
-  const currStepBans = (draft.strikedStages[draft.currStep] ?? []).length;
-  const needed = phase === "ban" ? (ruleset.strikeOrder[draft.currStep] ?? 0) : 0;
-  const canConfirm =
-    phase === "pick"
-      ? !!selectedCharacter
-      : phase === "ban"
-      ? currStepBans >= needed
-      : false;
-
-  const p1PickList = chars.filter((c) => p1Picks.has(c.codename));
-  const p2PickList = chars.filter((c) => p2Picks.has(c.codename));
-  const p1BanList  = chars.filter((c) => p1Bans.has(c.codename));
-  const p2BanList  = chars.filter((c) => p2Bans.has(c.codename));
-
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#121212", color: "#fff", fontFamily: "sans-serif", overflow: "hidden" }}>
-
+    <div style={root}>
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 20px", background: "#1e1e1e", borderBottom: "1px solid #333", gap: 12, flexShrink: 0 }}>
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <span style={{ fontSize: 11, color: "#888", textTransform: "uppercase" }}>Game {currGame + 1}</span>
-          <span style={{ fontSize: 15, fontWeight: 700 }}>
-            <span style={{ color: p1Color }}>{p1Name}</span>
-            <span style={{ color: "#666", margin: "0 8px" }}>vs</span>
-            <span style={{ color: p2Color }}>{p2Name}</span>
-          </span>
+      <div style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "8px 20px", background: "#161616", borderBottom: "1px solid #2a2a2a",
+        flexShrink: 0, gap: 12,
+      }}>
+        <div style={{ fontSize: 13, fontWeight: 700 }}>
+          <span style={{ color: TEAM_A_COLOR }}>{teamAName}</span>
+          <span style={{ color: "#444", margin: "0 8px" }}>vs</span>
+          <span style={{ color: TEAM_B_COLOR }}>{teamBName}</span>
         </div>
 
-        {/* Prompt */}
         <div style={{ flex: 1, textAlign: "center" }}>
-          {playerName && phase !== "complete" && (
-            <span style={{ fontSize: 16, fontWeight: 700, color: currPlayerColor }}>{prompt}</span>
-          )}
-          {(!playerName || phase === "complete") && (
-            <span style={{ fontSize: 16, fontWeight: 700, color: "#ccc" }}>{prompt}</span>
-          )}
+          <span style={{ fontSize: 15, fontWeight: 800, color: actingColor }}>{prompt}</span>
         </div>
 
-        {/* Controls */}
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={handleUndo} disabled={!canUndo} style={btnStyle("ghost")}>↩ Undo</button>
-          <button onClick={handleRedo} disabled={!canRedo} style={btnStyle("ghost")}>↪ Redo</button>
-          <button onClick={handleGentlemans} style={btnStyle(gentlemans ? "active" : "ghost")}>🤝 Gents</button>
-          <button onClick={handleRestart} style={btnStyle("danger")}>↺ Restart</button>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button onClick={handleUndo} disabled={!canUndo} style={{ ...btn("ghost"), opacity: canUndo ? 1 : 0.3, padding: "6px 14px" }}>↩ Undo</button>
+          <button onClick={handleRedo} disabled={!canRedo} style={{ ...btn("ghost"), opacity: canRedo ? 1 : 0.3, padding: "6px 14px" }}>↪ Redo</button>
+          <button onClick={handleRestart} style={{ ...btn("danger"), padding: "6px 14px" }}>↺ Restart</button>
         </div>
       </div>
 
-      {/* Three-panel layout */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr 1fr", flex: 1, gap: 0, overflow: "hidden" }}>
-
-        {/* P1 Panel */}
-        <div style={{ background: "#161616", borderRight: `2px solid ${p1Color}22`, padding: 12, overflowY: "auto" }}>
-          <div style={{ color: p1Color, fontWeight: 700, fontSize: 14, marginBottom: 10, borderBottom: `1px solid ${p1Color}44`, paddingBottom: 6 }}>
-            {p1Name}
-          </div>
-          {p1PickList.length > 0 && (
-            <>
-              <div style={{ color: "#888", fontSize: 11, marginBottom: 6 }}>PICKS</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 12 }}>
-                {p1PickList.map((c) => (
-                  <CharCard key={c.codename} {...c} state="picked" pickedBy={0} />
-                ))}
-              </div>
-            </>
-          )}
-          {p1BanList.length > 0 && (
-            <>
-              <div style={{ color: "#888", fontSize: 11, marginBottom: 6 }}>BANS</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6 }}>
-                {p1BanList.map((c) => (
-                  <CharCard key={c.codename} {...c} state="banned" bannedBy={0} />
-                ))}
-              </div>
-            </>
-          )}
-          {phase === "complete" && (
-            <button onClick={() => handleWinner(0)} style={{ ...btnStyle("primary"), width: "100%", marginTop: 12 }}>
-              {p1Name} wins
-            </button>
-          )}
+      {/* Main area */}
+      <div style={{ display: "flex", flex: 1, overflow: "hidden", gap: 0 }}>
+        {/* Team A sidebar */}
+        <div style={{ padding: "12px 10px 12px 14px", borderRight: "1px solid #2a2a2a", overflowY: "auto", flexShrink: 0 }}>
+          <TeamColumn
+            name={teamAName}
+            color={TEAM_A_COLOR}
+            picks={teamAPicks}
+            bans={teamABans}
+            pickSlots={ruleset.teamSize}
+            banSlots={bansPerTeam.a}
+            allChars={allChars}
+            isActive={currentTeam === 0}
+          />
         </div>
 
-        {/* Center grid */}
-        <div style={{ padding: 16, overflowY: "auto", background: "#181818" }}>
+        {/* Character grid */}
+        <div style={{ flex: 1, padding: 16, overflowY: "auto", background: "#111" }}>
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fill, minmax(90px, 1fr))",
             gap: 10,
           }}>
-            {chars.map((c) => {
+            {allChars.map(c => {
               const cstate = getCharState(c.codename);
-              const clickable = cstate === "normal" || cstate === "selected";
+              const clickable = cstate === "normal" || (phase === "pick" && cstate === "selected");
               return (
                 <CharCard
                   key={c.codename}
-                  {...c}
+                  char={c}
                   state={cstate}
-                  bannedBy={getBannedBy(c.codename)}
-                  pickedBy={getPickedBy(c.codename)}
-                  onClick={clickable && currPlayer !== -1 ? () => handleSelect(c.codename) : undefined}
+                  size={90}
+                  onClick={clickable ? () => {
+                    if (phase === "ban") handleBan(c.codename);
+                    else if (phase === "pick") handlePickSelect(c.codename);
+                  } : undefined}
                 />
               );
             })}
           </div>
 
-          {/* Confirm button */}
-          {canConfirm && phase !== "complete" && (
+          {phase === "pick" && selectedChar && (
             <div style={{ textAlign: "center", marginTop: 20 }}>
-              <button onClick={handleConfirm} style={{ ...btnStyle("primary"), fontSize: 18, padding: "12px 48px" }}>
-                {phase === "pick" ? `Lock in ${selectedCharacter}` : "Confirm Bans"}
+              <button
+                onClick={handlePickConfirm}
+                style={{ ...btn("primary"), fontSize: 18, padding: "14px 48px" }}
+              >
+                Lock in {allChars.find(c => c.codename === selectedChar)?.displayName}
               </button>
             </div>
           )}
         </div>
 
-        {/* P2 Panel */}
-        <div style={{ background: "#161616", borderLeft: `2px solid ${p2Color}22`, padding: 12, overflowY: "auto" }}>
-          <div style={{ color: p2Color, fontWeight: 700, fontSize: 14, marginBottom: 10, borderBottom: `1px solid ${p2Color}44`, paddingBottom: 6, textAlign: "right" }}>
-            {p2Name}
-          </div>
-          {p2PickList.length > 0 && (
-            <>
-              <div style={{ color: "#888", fontSize: 11, marginBottom: 6, textAlign: "right" }}>PICKS</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8, marginBottom: 12 }}>
-                {p2PickList.map((c) => (
-                  <CharCard key={c.codename} {...c} state="picked" pickedBy={1} />
-                ))}
-              </div>
-            </>
-          )}
-          {p2BanList.length > 0 && (
-            <>
-              <div style={{ color: "#888", fontSize: 11, marginBottom: 6, textAlign: "right" }}>BANS</div>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6 }}>
-                {p2BanList.map((c) => (
-                  <CharCard key={c.codename} {...c} state="banned" bannedBy={1} />
-                ))}
-              </div>
-            </>
-          )}
-          {phase === "complete" && (
-            <button onClick={() => handleWinner(1)} style={{ ...btnStyle("secondary"), width: "100%", marginTop: 12 }}>
-              {p2Name} wins
-            </button>
-          )}
+        {/* Team B sidebar */}
+        <div style={{ padding: "12px 14px 12px 10px", borderLeft: "1px solid #2a2a2a", overflowY: "auto", flexShrink: 0 }}>
+          <TeamColumn
+            name={teamBName}
+            color={TEAM_B_COLOR}
+            picks={teamBPicks}
+            bans={teamBBans}
+            pickSlots={ruleset.teamSize}
+            banSlots={bansPerTeam.b}
+            allChars={allChars}
+            isActive={currentTeam === 1}
+          />
         </div>
       </div>
 
       {error && (
-        <div style={{ padding: "6px 16px", background: "#5c1515", color: "#f88", fontSize: 13, flexShrink: 0 }}>{error}</div>
+        <div style={{ padding: "6px 16px", background: "#5c1515", color: "#f88", fontSize: 13, flexShrink: 0 }}>
+          {error}
+          <button onClick={() => setError(null)} style={{ marginLeft: 10, background: "none", border: "none", color: "#f88", cursor: "pointer" }}>✕</button>
+        </div>
       )}
     </div>
   );
-}
-
-// ── Style helpers ────────────────────────────────────────────────────────────
-
-function btnStyle(variant: "primary" | "secondary" | "ghost" | "danger" | "active"): React.CSSProperties {
-  const base: React.CSSProperties = {
-    border: "none",
-    borderRadius: 6,
-    padding: "7px 16px",
-    fontSize: 13,
-    fontWeight: 700,
-    cursor: "pointer",
-    transition: "opacity 0.15s",
-  };
-  const variants: Record<string, React.CSSProperties> = {
-    primary:   { background: "#0066cc", color: "#fff" },
-    secondary: { background: "#29b6f6", color: "#000" },
-    ghost:     { background: "#2c2c2c", color: "#ccc" },
-    danger:    { background: "#8b1a1a", color: "#fff" },
-    active:    { background: "#2e5e2e", color: "#7ef" },
-  };
-  return { ...base, ...variants[variant] };
 }
