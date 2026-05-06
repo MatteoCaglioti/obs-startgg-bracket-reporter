@@ -4,6 +4,12 @@
   padding: 0;
 }
 
+:root {
+  /* Height of the picks/bans section labels.
+     Used both to size the label and to clip portrait bottoms at exactly the same line. */
+  --label-height: 40px;
+}
+
 body {
   background: transparent;
   overflow: hidden;
@@ -92,9 +98,9 @@ body {
   display: flex;
   /* Bottom-align all portraits so the tallest (outermost) sets the baseline */
   align-items: flex-end;
-  /* Hard-clip portraits before the section label area (~40px from bottom) */
-  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 40px), transparent calc(100% - 40px));
-  mask-image: linear-gradient(to bottom, black calc(100% - 40px), transparent calc(100% - 40px));
+  /* Hard-clip portraits at exactly the top of the section label */
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - var(--label-height)), transparent calc(100% - var(--label-height)));
+  mask-image: linear-gradient(to bottom, black calc(100% - var(--label-height)), transparent calc(100% - var(--label-height)));
 }
 
 /* Right panel: pack icons to the right edge */
@@ -169,12 +175,15 @@ body {
   bottom: 0;
   left: 0;
   right: 0;
+  height: var(--label-height);
+  display: flex;
+  align-items: center;
   font-size: 26px;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 4px;
   color: rgba(255,255,255,0.7);
-  padding: 6px 32px;
+  padding: 0 32px;
   pointer-events: none;
   /* Must exceed any char-slot z-index (JS sets max ~6) */
   z-index: 100;
