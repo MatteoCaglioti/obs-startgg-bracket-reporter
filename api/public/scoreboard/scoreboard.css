@@ -15,7 +15,6 @@
   /* ── Panel dimensions ──────────────────────────────────────────────────── */
   --panel-height: 68px;
   --panel-width:  480px;
-  --skew-px:      36px;          /* how far the inner edge is angled diagonally */
   --score-width:  68px;
 }
 
@@ -51,22 +50,7 @@ body {
   filter: drop-shadow(0 4px 14px rgba(0,0,0,0.65));
 }
 
-/* Background tab that the pill overlaps */
-#match-info::before {
-  content: '';
-  display: block;
-  width: 200px;
-  height: 56px;
-  background: linear-gradient(to right, #362e63, #5c3375);
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
-}
-
 #matchPill {
-  position: absolute;
-  left: 50%;
-  top: 38px;                      /* hangs below the tab */
-  transform: translateX(-50%);
   background: linear-gradient(to right, #8b2a75, #d00a69);
   border-radius: 10px;
   padding: 5px 18px;
@@ -112,24 +96,22 @@ body {
   /* Extra inner padding compensates for the clipped corner */
 }
 
-/* P1: straight left edge, angled right edge (inward toward center)
-   clip-path cuts from (100%, 0) to (100%−skew, 100%)                       */
+/* P1: rounded rect, outer corners rounded */
 .name-panel.p1 {
   flex-direction: row-reverse;   /* losers badge at far left, name toward right */
   background: linear-gradient(to left, #527aa0, #4f4c83);
-  clip-path: polygon(0 0, 100% 0, calc(100% - var(--skew-px)) 100%, 0 100%);
+  border-radius: 10px 0 0 10px;
   padding-left: 18px;
-  padding-right: calc(18px + var(--skew-px));
+  padding-right: 18px;
 }
 
-/* P2: angled left edge (inward toward center), straight right edge
-   clip-path cuts from (0, 100%) to (skew, 0)                                */
+/* P2: rounded rect, outer corners rounded */
 .name-panel.p2 {
   flex-direction: row;           /* name toward left, losers badge at far right */
   background: linear-gradient(to right, #527aa0, #4f4c83);
-  clip-path: polygon(var(--skew-px) 0, 100% 0, 100% 100%, 0 100%);
+  border-radius: 0 10px 10px 0;
   padding-right: 18px;
-  padding-left: calc(18px + var(--skew-px));
+  padding-left: 18px;
 }
 
 /* ── Player name ─────────────────────────────────────────────────────────── */
