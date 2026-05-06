@@ -11,7 +11,7 @@
 }
 
 body {
-  background: transparent;
+  background: #222;
   overflow: hidden;
   font-family: 'Segoe UI', Arial, sans-serif;
 }
@@ -87,8 +87,10 @@ body {
 .pick-section,
 .ban-section {
   position: relative;
-  /* Height driven entirely by char-slots content so the absolute label sits at portrait bottoms */
-  display: inline-flex;
+  width: 100%;
+  /* Always at least label-height tall so label is visible even when empty */
+  min-height: var(--label-height);
+  display: flex;
   flex-direction: column;
 }
 
@@ -173,8 +175,6 @@ body {
 .section-label {
   position: absolute;
   bottom: 0;
-  left: 0;
-  right: 0;
   height: var(--label-height);
   display: flex;
   align-items: center;
@@ -189,16 +189,24 @@ body {
   z-index: 100;
 }
 
-/* Gradient only under the label — fades from outer viewport edge inward */
+/* Gradient fades from the outer viewport edge inward.
+   Width is fixed in vw so it never changes as characters are drafted. */
 #panel-a .section-label {
+  left: 0;
   background: linear-gradient(to right, rgba(255,255,255,0.18), transparent);
-  text-align: left;
 }
 
 #panel-b .section-label {
+  right: 0;
   background: linear-gradient(to left, rgba(255,255,255,0.18), transparent);
   justify-content: flex-end;
 }
+
+/* Ban bar: 25% of the way to viewport center (center = 50vw from each edge) */
+.ban-section  .section-label { width: 12.5vw; }
+
+/* Pick bar: 75% of the way to viewport center */
+.pick-section .section-label { width: 37.5vw; }
 
 /* ── Center status ──────────────────────────────────────────────────────── */
 
