@@ -6,7 +6,9 @@ export function createStreamDeckRouter(io: Server) {
   const router = Router();
 
   // Scoreboard display state keyed by streamId (or "default")
-  const displayState: Record<string, { visible: boolean; swapped: boolean }> = {};
+  const displayState: Record<string, { visible: boolean; swapped: boolean }> = {
+    default: { visible: true, swapped: false },
+  };
 
   function getDisplay(streamId: string) {
     if (!displayState[streamId]) {
@@ -47,7 +49,6 @@ export function createStreamDeckRouter(io: Server) {
       score1: match.score1 + 1,
       score2: match.score2,
     });
-    io.emit("match:update", store.getState());
     return res.json(store.getState()[match.id]);
   });
 
@@ -63,7 +64,6 @@ export function createStreamDeckRouter(io: Server) {
       score1: Math.max(0, match.score1 - 1),
       score2: match.score2,
     });
-    io.emit("match:update", store.getState());
     return res.json(store.getState()[match.id]);
   });
 
@@ -79,7 +79,6 @@ export function createStreamDeckRouter(io: Server) {
       score1: match.score1,
       score2: match.score2 + 1,
     });
-    io.emit("match:update", store.getState());
     return res.json(store.getState()[match.id]);
   });
 
@@ -95,7 +94,21 @@ export function createStreamDeckRouter(io: Server) {
       score1: match.score1,
       score2: Math.max(0, match.score2 - 1),
     });
-    io.emit("match:update", store.getState());
+    return res.json(store.getState()[match.id]);
+  });
+
+  router.all("/score/reset", (req, res) => {
+    const { streamId } = { ...req.query, ...req.body };
+    const match = findActiveMatch(streamId);
+    if (!match) return res.status(404).json({ error: "No active match found" });
+    if (match.status === "complete") return res.status(409).json({ error: "Match is complete" });
+
+    store.dispatch({
+      type: "SCORE_UPDATED",
+      matchId: match.id,
+      score1: 0,
+      score2: 0,
+    });
     return res.json(store.getState()[match.id]);
   });
 
@@ -129,5 +142,8 @@ export function createStreamDeckRouter(io: Server) {
     return res.json(displayState);
   });
 
-  return { router, getDisplay, emitDisplay };
+  return {
+    router,
+    getDisplayState: () => displayState,
+  };
 }

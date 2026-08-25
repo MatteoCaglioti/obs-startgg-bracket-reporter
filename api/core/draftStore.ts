@@ -90,19 +90,25 @@ class DraftStore {
     if (this.state.phase !== "rps") return;
     if (!this.state.ruleset) return;
 
-    this.saveSnapshot();
-    const teamAName = winner === 1 ? this.state.pendingTeam1Name : this.state.pendingTeam2Name;
-    const teamBName = winner === 1 ? this.state.pendingTeam2Name : this.state.pendingTeam1Name;
+    const ruleset = winner === 1
+      ? this.state.ruleset
+      : {
+          ...this.state.ruleset,
+          banOrder: this.state.ruleset.banOrder.map((team) => 1 - team),
+          pickOrder: this.state.ruleset.pickOrder.map((team) => 1 - team),
+        };
 
     this.state = {
       ...this.state,
       phase: "ban",
-      teamAName,
-      teamBName,
+      teamAName: this.state.pendingTeam1Name,
+      teamBName: this.state.pendingTeam2Name,
       rpsWinner: winner,
+      ruleset,
       currentStep: 0,
-      currentTeam: this.state.ruleset.banOrder[0] as 0 | 1,
+      currentTeam: ruleset.banOrder[0] as 0 | 1,
     };
+    this.saveSnapshot();
     this.emit();
   }
 
@@ -113,8 +119,6 @@ class DraftStore {
     const allBanned = [...this.state.teamABans, ...this.state.teamBBans];
     const allPicked = [...this.state.teamAPicks, ...this.state.teamBPicks];
     if (allBanned.includes(codename) || allPicked.includes(codename)) return false;
-
-    this.saveSnapshot();
 
     const { banOrder } = this.state.ruleset;
     const actingTeam = banOrder[this.state.currentStep];
@@ -147,6 +151,7 @@ class DraftStore {
       };
     }
 
+    this.saveSnapshot();
     this.emit();
     return true;
   }
@@ -158,8 +163,6 @@ class DraftStore {
     const allBanned = [...this.state.teamABans, ...this.state.teamBBans];
     const allPicked = [...this.state.teamAPicks, ...this.state.teamBPicks];
     if (allBanned.includes(codename) || allPicked.includes(codename)) return false;
-
-    this.saveSnapshot();
 
     const { pickOrder } = this.state.ruleset;
     const actingTeam = pickOrder[this.state.currentStep];
@@ -190,6 +193,7 @@ class DraftStore {
       };
     }
 
+    this.saveSnapshot();
     this.emit();
     return true;
   }
@@ -209,8 +213,6 @@ class DraftStore {
     for (const codename of codenames) {
       if (allBanned.includes(codename) || allPicked.includes(codename)) return false;
     }
-
-    this.saveSnapshot();
 
     // Apply all bans/picks atomically — phase may transition mid-batch (e.g. last ban)
     let s: Omit<DraftState, "canUndo" | "canRedo"> = { ...this.state, staging: null };
@@ -241,6 +243,7 @@ class DraftStore {
     }
 
     this.state = { ...s, canUndo: false, canRedo: false };
+    this.saveSnapshot();
     this.emit();
     return true;
   }
@@ -263,20 +266,10 @@ class DraftStore {
     return true;
   }
 
-  restart(newRuleset?: DraftRuleset) {
-    const { ruleset: existingRuleset, pendingTeam1Name, pendingTeam2Name } = this.state;
-    const ruleset = newRuleset ?? existingRuleset;
-    if (!ruleset) return;
-    this.state = {
-      ...this.initialState(),
-      phase: "rps",
-      ruleset,
-      pendingTeam1Name,
-      pendingTeam2Name,
-    };
+  restart() {
+    this.state = this.initialState();
     this.history = [];
     this.historyIndex = -1;
-    this.saveSnapshot();
     this.emit();
   }
 }

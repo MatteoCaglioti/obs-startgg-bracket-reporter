@@ -39,6 +39,7 @@ body {
 }
 
 button,
+input,
 select {
   font: inherit;
 }
@@ -118,6 +119,22 @@ h3 {
   padding: 32px;
 }
 
+.setup-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+}
+
+.setup-panel {
+  width: min(760px, 100%);
+  min-height: 0;
+  padding: clamp(24px, 5vw, 48px);
+}
+
+.setup-copy {
+  margin-bottom: 28px;
+}
+
 .hero {
   max-width: 760px;
   margin-bottom: 20px;
@@ -130,6 +147,12 @@ h3 {
   justify-content: space-between;
   gap: 20px;
   max-width: none;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .hero-copy {
@@ -250,6 +273,10 @@ h3 {
 }
 
 /* Form controls */
+.setup-form {
+  display: grid;
+}
+
 .field-label {
   display: block;
   margin-bottom: 8px;
@@ -259,6 +286,7 @@ h3 {
   text-transform: uppercase;
 }
 
+input,
 select {
   width: 100%;
   margin-bottom: 18px;
@@ -270,9 +298,80 @@ select {
   background: rgba(2, 6, 23, 0.62);
 }
 
+input:focus,
 select:focus {
   border-color: rgba(139, 92, 246, 0.7);
   box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.16);
+}
+
+.setup-submit {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.back-button {
+  width: fit-content;
+  margin-bottom: 24px;
+  padding: 0;
+  color: var(--muted-strong);
+  background: transparent;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.back-button:hover {
+  color: var(--text);
+}
+
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.mode-card {
+  display: grid;
+  min-height: 220px;
+  padding: 24px;
+  border: 1px solid var(--border-strong);
+  border-radius: 24px;
+  color: var(--text);
+  background: var(--card);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    transform 150ms ease,
+    border-color 150ms ease,
+    background 150ms ease;
+}
+
+.mode-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(139, 92, 246, 0.7);
+  background: var(--card-hover);
+}
+
+.mode-card-icon {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 16px;
+  color: white;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  font-size: 1.1rem;
+  font-weight: 1000;
+}
+
+.mode-card strong {
+  align-self: end;
+  margin: 24px 0 8px;
+  font-size: 1.2rem;
+}
+
+.mode-card > span:last-child {
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 /* Buttons */
@@ -362,6 +461,55 @@ select:focus {
 .control-stack {
   display: grid;
   gap: 12px;
+}
+
+.offline-summary {
+  display: grid;
+  gap: 20px;
+}
+
+.offline-editor {
+  display: grid;
+}
+
+.offline-editor .button {
+  width: 100%;
+}
+
+.offline-player-list {
+  display: grid;
+  gap: 12px;
+}
+
+.offline-player-list > div {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+}
+
+.offline-player-list span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.offline-player-list strong {
+  font-size: 1.2rem;
+}
+
+.offline-help {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.offline-help code {
+  color: var(--muted-strong);
+  overflow-wrap: anywhere;
 }
 
 .match-card,
@@ -597,6 +745,14 @@ select:focus {
     flex-direction: column;
   }
 
+  .hero-actions {
+    width: 100%;
+  }
+
+  .hero-actions .button {
+    flex: 1;
+  }
+
   .dashboard-grid,
   .logic-first-grid {
     grid-template-columns: 1fr;
@@ -617,7 +773,8 @@ select:focus {
   }
 
   .players-grid,
-  .action-row {
+  .action-row,
+  .mode-grid {
     grid-template-columns: 1fr;
   }
 

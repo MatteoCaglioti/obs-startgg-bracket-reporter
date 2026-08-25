@@ -3,7 +3,8 @@ import type { DraftState, DraftCharacter } from "./draftTypes";
 import { io } from "socket.io-client";
 import styles from "./Draft.module.css";
 
-const API_BASE = "http://localhost:3001";
+const API_BASE = `${window.location.protocol}//${window.location.hostname}:3001`;
+const DRAFT_API_BASE = `${API_BASE}/api/draft`;
 const TEAM_A_COLOR = "#ff7a6d";
 const TEAM_B_COLOR = "#29b6f6";
 
@@ -15,7 +16,7 @@ const GRID_RIGHT  = ["Ryu",    "Oro",    "Dudley",   "Elena",  "Hugo",   "Ken"];
 // ── API helpers ──────────────────────────────────────────────────────────────
 
 async function draftPost(endpoint: string, body?: object): Promise<DraftState> {
-  const res = await fetch(`${API_BASE}/draft${endpoint}`, {
+  const res = await fetch(`${DRAFT_API_BASE}${endpoint}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: body ? JSON.stringify(body) : undefined,
@@ -25,6 +26,10 @@ async function draftPost(endpoint: string, body?: object): Promise<DraftState> {
     throw new Error(err.error ?? `HTTP ${res.status}`);
   }
   return res.json();
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Unexpected error";
 }
 
 // ── Character card ────────────────────────────────────────────────────────────
@@ -192,35 +197,6 @@ function RpsPhase({ state, onWinner }: { state: DraftState; onWinner: (w: 1 | 2)
   );
 }
 
-// ── Complete phase ────────────────────────────────────────────────────────────
-
-function CompletePhase({ state, onRestart }: { state: DraftState; onRestart: () => void }) {
-  const { ruleset, teamAName, teamBName, teamAPicks, teamBPicks } = state;
-  if (!ruleset) return null;
-  const findChar = (codename: string) => ruleset.characters.find(c => c.codename === codename)!;
-  return (
-    <div className={styles.completeRoot}>
-      <div className={styles.completeTitle}>DRAFT COMPLETE</div>
-      <div className={styles.completeTeams}>
-        {([["A", teamAName, teamAPicks, TEAM_A_COLOR], ["B", teamBName, teamBPicks, TEAM_B_COLOR]] as const).map(([team, name, picks, color]) => (
-          <div key={team} className={styles.completeTeamCard} style={{ "--team-color": color } as React.CSSProperties}>
-            <div className={styles.completeTeamName}>{name}</div>
-            <div className={styles.completePickRow}>
-              {picks.map(codename => {
-                const c = findChar(codename);
-                return c ? <CharCard key={codename} char={c} state={team === "A" ? "pickedA" : "pickedB"} size={80} /> : null;
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-      <button onClick={onRestart} className={`${styles.btn} ${styles.btnSecondary}`} style={{ fontSize: 16, padding: "12px 36px" }}>
-        ↺ New Draft
-      </button>
-    </div>
-  );
-}
-
 // ── Main Draft Component ─────────────────────────────────────────────────────
 
 /** How many consecutive actions the current team has from a given step in the order array. */
@@ -247,15 +223,25 @@ export default function Draft() {
     // Don't reset selectedChars on socket updates — staging is local until lock-in
     socket.on("draft:update", (state: DraftState) => { setDraft(state); });
     socket.on("connect_error", () => setError("Cannot connect to server"));
-    fetch(`${API_BASE}/draft`).then(r => r.json()).then(setDraft).catch(() => {});
+    fetch(DRAFT_API_BASE)
+      .then(r => r.json())
+      .then(setDraft)
+      .catch((error: unknown) => setError(getErrorMessage(error)));
     return () => { socket.disconnect(); };
   }, []);
 
   const handleStart      = useCallback(async (t1: string, t2: string) => {
     try { setDraft(await draftPost("/start", { team1Name: t1, team2Name: t2 })); setError(null); }
-    catch (e: any) { setError(e.message); }
+    catch (error: unknown) { setError(getErrorMessage(error)); }
   }, []);
-  const handleRpsWinner  = useCallback(async (w: 1 | 2) => { try { await draftPost("/rps-winner", { winner: w }); } catch (e: any) { setError(e.message); } }, []);
+  const handleRpsWinner  = useCallback(async (w: 1 | 2) => {
+    try {
+      await draftPost("/rps-winner", { winner: w });
+      setError(null);
+    } catch (error: unknown) {
+      setError(getErrorMessage(error));
+    }
+  }, []);
 
   const handleToggleChar = useCallback((codename: string) => {
     if (!draft) return;
@@ -263,7 +249,8 @@ export default function Draft() {
     const newChars = selectedChars[0] === codename ? [] : [codename];
     setSelectedChars(newChars);
     if (draft.phase === "ban" || draft.phase === "pick") {
-      draftPost("/stage", { codenames: newChars, action: draft.phase }).catch(() => {});
+      draftPost("/stage", { codenames: newChars, action: draft.phase })
+        .catch((error: unknown) => setError(getErrorMessage(error)));
     }
   }, [selectedChars, draft]);
 
@@ -272,12 +259,40 @@ export default function Draft() {
     try {
       await draftPost("/lock-in", { codenames: selectedChars });
       setSelectedChars([]);
-    } catch (e: any) { setError(e.message); setSelectedChars([]); }
+      setError(null);
+    } catch (error: unknown) {
+      setError(getErrorMessage(error));
+      setSelectedChars([]);
+    }
   }, [selectedChars, draft]);
 
-  const handleUndo    = useCallback(async () => { try { await draftPost("/undo");    setSelectedChars([]); } catch { } }, []);
-  const handleRedo    = useCallback(async () => { try { await draftPost("/redo");    setSelectedChars([]); } catch { } }, []);
-  const handleRestart = useCallback(async () => { try { await draftPost("/restart"); setSelectedChars([]); } catch { } }, []);
+  const handleUndo = useCallback(async () => {
+    try {
+      await draftPost("/undo");
+      setSelectedChars([]);
+      setError(null);
+    } catch (error: unknown) {
+      setError(getErrorMessage(error));
+    }
+  }, []);
+  const handleRedo = useCallback(async () => {
+    try {
+      await draftPost("/redo");
+      setSelectedChars([]);
+      setError(null);
+    } catch (error: unknown) {
+      setError(getErrorMessage(error));
+    }
+  }, []);
+  const handleRestart = useCallback(async () => {
+    try {
+      await draftPost("/restart");
+      setSelectedChars([]);
+      setError(null);
+    } catch (error: unknown) {
+      setError(getErrorMessage(error));
+    }
+  }, []);
 
   if (!draft) return <div className={styles.connecting}>Connecting…</div>;
 

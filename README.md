@@ -5,6 +5,7 @@ A tournament management platform for livestreamed events. Replaces TournamentStr
 ## Features
 
 - **Bracket Manager** — Electron desktop app (React/Vite) for managing tournament sets: assign matches to streams, track scores, and submit results to start.gg.
+- **Offline Scoreboard Mode** — Enter two player names and use the score controls, OBS overlay, and Stream Deck endpoints without a start.gg tournament.
 - **Scoreboard Overlay** — Browser source for OBS; auto-updates via WebSocket when scores or players change.
 - **Character Draft Overlay** — Browser source for OBS; displays a live ban/pick draft for team-format matches.
 - **Stream Deck Integration** — HTTP endpoints (GET or POST) for hardware controllers to adjust scores and toggle scoreboard visibility.
@@ -23,7 +24,8 @@ obs-startgg-bracket-reporter/
 ```
 
 - **Backend** runs on `http://localhost:3001`
-- **Bracket manager** runs on `http://localhost:5173` in dev, embedded in Electron in production
+- **Bracket manager** runs on `http://localhost:5173` in dev and is served by the backend inside Electron in production
+- **Draft controller**: `http://localhost:5173/draft` in dev or `http://localhost:3001/draft` in production
 - **Scoreboard overlay**: `http://localhost:3001/scoreboard`
 - **Draft overlay**: `http://localhost:3001/draft-overlay`
 
@@ -34,8 +36,7 @@ obs-startgg-bracket-reporter/
 ### Prerequisites
 
 - Node.js 20+
-- A [start.gg](https://start.gg) developer API token
-- Your tournament slug (e.g. `tournament/my-event`)
+- A [start.gg](https://start.gg) developer API token when using tournament mode
 
 ### Install
 
@@ -45,17 +46,20 @@ npm run install:all
 
 ### Development
 
-Run the API server and web frontend in separate terminals:
+Run the API server and web frontend together:
 
 ```bash
-# Terminal 1 — API server
-npm run dev:api
-
-# Terminal 2 — Web frontend
-npm run dev:web
+npm run dev
 ```
 
 Then open `http://localhost:5173` in a browser for the bracket manager, or launch the Electron app.
+
+To use the Electron window during development, leave `npm run dev` running and
+launch this in a second terminal:
+
+```bash
+npm run dev:electron
+```
 
 ### Production Build
 
@@ -71,11 +75,14 @@ npm run dist
 
 Outputs an NSIS installer to `release/`.
 
+If Windows blocks `electron-builder` while extracting symbolic links, enable
+Windows Developer Mode or run the build from an elevated terminal.
+
 ---
 
 ## Configuration
 
-On first launch, enter your start.gg API token and tournament slug in the bracket manager settings screen. These are persisted to `api/config.json`.
+On launch, choose start.gg tournament mode or offline mode. Tournament mode accepts a numeric tournament ID, slug (for example `tournament/my-event`), or tournament URL. The API token and tournament identifier are persisted to `api/config.json`.
 
 To configure the character draft ruleset (ban/pick order, roster), edit `api/config/ruleset.json`. See [Ruleset Format](#ruleset-format) below.
 
@@ -105,10 +112,13 @@ All endpoints are on `http://localhost:3001`.
 | `GET` | `/matches` | — | All matches in backend state |
 | `GET` | `/streams` | — | Tournament streams from start.gg |
 | `POST` | `/refresh` | — | Pull latest sets from start.gg (preserves local scores) |
+| `POST` | `/offline` | `{ player1Name, player2Name, matchLabel? }` | Create/reset the active offline scoreboard match |
+| `POST` | `/offline/update` | `{ player1Name, player2Name, matchLabel }` | Update offline names and label without resetting scores |
 | `POST` | `/assign` | `{ matchId, streamId }` | Assign a match to a stream |
 | `POST` | `/unassign` | `{ matchId }` | Remove a match from a stream |
 | `POST` | `/start` | `{ matchId }` | Mark a match as live on start.gg |
 | `POST` | `/updateScoreLocal` | `{ matchId, score1, score2 }` | Update scores in backend only |
+| `POST` | `/resetScore` | `{ matchId }` | Reset both match scores to zero |
 | `POST` | `/saveResult` | `{ matchId }` | Push current scores to start.gg |
 | `POST` | `/submitFinal` | `{ matchId }` | Report final result and mark complete |
 
@@ -129,6 +139,7 @@ All Stream Deck endpoints accept **GET or POST**. Pass `streamId` as a query par
 | `/streamdeck/p1/score/down` | Decrement P1 score |
 | `/streamdeck/p2/score/up` | Increment P2 score |
 | `/streamdeck/p2/score/down` | Decrement P2 score |
+| `/streamdeck/score/reset` | Reset both scores to zero |
 | `/streamdeck/swap` | Toggle player side swap on scoreboard |
 | `/streamdeck/scoreboard/show` | Show scoreboard overlay |
 | `/streamdeck/scoreboard/hide` | Hide scoreboard overlay |
@@ -138,14 +149,16 @@ All Stream Deck endpoints accept **GET or POST**. Pass `streamId` as a query par
 
 | Method | Path | Body | Description |
 |---|---|---|---|
-| `GET` | `/draft` | — | Current draft state |
-| `POST` | `/draft/start` | `{ team1Name, team2Name }` | Start a new draft (enters RPS phase) |
-| `POST` | `/draft/rps-winner` | `{ winner: 1 \| 2 }` | Record RPS winner; begins ban phase |
-| `POST` | `/draft/ban` | `{ codename }` | Ban a character |
-| `POST` | `/draft/pick` | `{ codename }` | Pick a character |
-| `POST` | `/draft/undo` | — | Undo last ban/pick |
-| `POST` | `/draft/redo` | — | Redo last undone action |
-| `POST` | `/draft/restart` | — | Restart draft from RPS (keeps team names) |
+| `GET` | `/api/draft` | — | Current draft state |
+| `POST` | `/api/draft/start` | `{ team1Name, team2Name }` | Start a new draft (enters RPS phase) |
+| `POST` | `/api/draft/rps-winner` | `{ winner: 1 \| 2 }` | Record RPS winner; begins ban phase |
+| `POST` | `/api/draft/stage` | `{ codenames, action }` | Preview the current selection on the overlay |
+| `POST` | `/api/draft/lock-in` | `{ codenames }` | Confirm the current selection |
+| `POST` | `/api/draft/ban` | `{ codename }` | Ban a character |
+| `POST` | `/api/draft/pick` | `{ codename }` | Pick a character |
+| `POST` | `/api/draft/undo` | — | Undo last ban/pick |
+| `POST` | `/api/draft/redo` | — | Redo last undone action |
+| `POST` | `/api/draft/restart` | — | Reset draft to team name entry |
 
 ---
 

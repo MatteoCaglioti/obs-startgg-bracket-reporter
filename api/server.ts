@@ -7,6 +7,7 @@ import fs from "fs";
 import {
   getStartggApiKey,
   getTournamentSlug,
+  readConfig,
   saveConfig,
 } from "./services/config";
 import { isMatchNotNull } from "./core/types";
@@ -21,11 +22,17 @@ import { draftStore } from "./core/draftStore";
 import { createStreamDeckRouter } from "./routes/streamdeck";
 import { createDraftRouter } from "./routes/draft";
 
-import type { TournamentStream } from "./core/types";
+import type { Match, TournamentStream } from "./core/types";
 import { getTournamentStreams } from "./services/getStreams";
 import { finalSubmitResultToStartGG } from "./services/submitResult";
 
 let streams: TournamentStream[] = [];
+const OFFLINE_MATCH_ID = "offline-match";
+const OFFLINE_STREAM: TournamentStream = {
+  id: "offline",
+  name: "Offline Scoreboard",
+  source: null,
+};
 
 const app = express();
 
@@ -40,11 +47,7 @@ function log(message: string) {
   console.log(message);
 }
 
-app.use(
-  cors({
-    origin: ["http://localhost:5173", "http://localhost:3001"],
-  }),
-);
+app.use(cors({ origin: true }));
 
 app.use(express.json());
 
@@ -72,12 +75,26 @@ app.get("/config", (_req, res) => {
   });
 });
 
+function normalizeTournamentSlug(value: string) {
+  const trimmed = value.trim();
+  const tournamentPath = trimmed.match(/(?:^|\/)tournament\/([^/?#]+)/i);
+
+  if (tournamentPath) {
+    return `tournament/${tournamentPath[1]}`;
+  }
+
+  return trimmed.replace(/^\/+|\/+$/g, "");
+}
+
 app.post("/config", (req, res) => {
   const { STARTGG_API_TOKEN, TOURNAMENT_SLUG } = req.body;
 
-  if (!STARTGG_API_TOKEN || typeof STARTGG_API_TOKEN !== "string") {
+  if (
+    STARTGG_API_TOKEN !== undefined &&
+    typeof STARTGG_API_TOKEN !== "string"
+  ) {
     return res.status(400).json({
-      error: "STARTGG_API_TOKEN is required",
+      error: "STARTGG_API_TOKEN must be a string",
     });
   }
 
@@ -87,9 +104,18 @@ app.post("/config", (req, res) => {
     });
   }
 
+  const token = STARTGG_API_TOKEN?.trim();
+  if (!token && !getStartggApiKey()) {
+    return res.status(400).json({
+      error: "STARTGG_API_TOKEN is required",
+    });
+  }
+
+  const currentConfig = readConfig();
   saveConfig({
-    STARTGG_API_TOKEN,
-    TOURNAMENT_SLUG,
+    ...currentConfig,
+    ...(token ? { STARTGG_API_TOKEN: token } : {}),
+    TOURNAMENT_SLUG: normalizeTournamentSlug(TOURNAMENT_SLUG),
   });
 
   res.json({ ok: true });
@@ -100,7 +126,7 @@ app.post("/config", (req, res) => {
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["http://localhost:5173", "http://localhost:3001"],
+    origin: "*",
   },
   transports: ["websocket", "polling"],
 });
@@ -113,27 +139,37 @@ store.subscribe((state) => {
 
 // ── Draft + Stream Deck routes ────────────────────────────────────────────
 
-const { router: streamDeckRouter } = createStreamDeckRouter(io);
+const { router: streamDeckRouter, getDisplayState } =
+  createStreamDeckRouter(io);
 app.use("/streamdeck", streamDeckRouter);
-app.use("/draft", createDraftRouter(io));
+
+const isProd = (process as any).pkg || process.env.IS_PROD === "true";
+const webDistPath = path.join(__dirname, "../../web/dist");
+const draftRouter = createDraftRouter(io);
+
+app.use("/api/draft", draftRouter);
+
+if (isProd) {
+  app.get("/draft", (_req, res) => {
+    res.sendFile(path.join(webDistPath, "index.html"));
+  });
+}
+
+// Preserve the existing POST endpoints for Stream Decks and other integrations.
+app.use("/draft", draftRouter);
 
 // ── Send current state to newly connected clients ─────────────────────────
 
 io.on("connection", (socket) => {
+  socket.emit("scoreboard:display", getDisplayState());
   socket.emit("match:update", store.getState());
   socket.emit("draft:update", draftStore.getState());
 });
 
 // ── React SPA (prod only — must come AFTER specific routes) ───────────────
 
-const isProd = (process as any).pkg || process.env.IS_PROD === "true";
 if (isProd) {
-  const webDistPath = path.join(__dirname, "../../web/dist");
   app.use(express.static(webDistPath));
-  // Exclude API, socket, scoreboard, draft-overlay, assets paths from catch-all
-  app.get(/^(?!\/socket\.io|\/api|\/scoreboard|\/draft-overlay|\/assets|\/streamdeck|\/draft).*/, (_req, res) => {
-    res.sendFile(path.join(webDistPath, "index.html"));
-  });
 }
 
 async function bootstrap() {
@@ -175,6 +211,95 @@ app.get("/matches", (req, res) => {
 
 app.get("/streams", (req, res) => {
   res.json(streams);
+});
+
+app.post("/offline", (req, res) => {
+  const player1Name =
+    typeof req.body.player1Name === "string" ? req.body.player1Name.trim() : "";
+  const player2Name =
+    typeof req.body.player2Name === "string" ? req.body.player2Name.trim() : "";
+  const matchLabel =
+    typeof req.body.matchLabel === "string" ? req.body.matchLabel.trim() : "";
+
+  if (!player1Name || !player2Name) {
+    return res.status(400).json({
+      error: "player1Name and player2Name are required",
+    });
+  }
+
+  if (
+    player1Name.length > 80 ||
+    player2Name.length > 80 ||
+    matchLabel.length > 80
+  ) {
+    return res.status(400).json({
+      error: "Player names and match label must be 80 characters or fewer",
+    });
+  }
+
+  const match: Match = {
+    id: OFFLINE_MATCH_ID,
+    round: matchLabel || "Offline Match",
+    player1: { id: "offline-player-1", name: player1Name },
+    player2: { id: "offline-player-2", name: player2Name },
+    score1: 0,
+    score2: 0,
+    streamId: OFFLINE_STREAM.id,
+    status: "live",
+    updatedAt: Date.now(),
+  };
+
+  streams = [OFFLINE_STREAM];
+  store.dispatch({
+    type: "OFFLINE_MATCH_CONFIGURED",
+    matchId: match.id,
+    match,
+  });
+
+  return res.json({
+    matchesData: store.getState(),
+    streamsData: streams,
+  });
+});
+
+app.post("/offline/update", (req, res) => {
+  const match = store.getState()[OFFLINE_MATCH_ID];
+  const player1Name =
+    typeof req.body.player1Name === "string" ? req.body.player1Name.trim() : "";
+  const player2Name =
+    typeof req.body.player2Name === "string" ? req.body.player2Name.trim() : "";
+  const matchLabel =
+    typeof req.body.matchLabel === "string" ? req.body.matchLabel.trim() : "";
+
+  if (!match || match.streamId !== OFFLINE_STREAM.id) {
+    return res.status(404).json({ error: "Offline match not found" });
+  }
+
+  if (!player1Name || !player2Name || !matchLabel) {
+    return res.status(400).json({
+      error: "player1Name, player2Name, and matchLabel are required",
+    });
+  }
+
+  if (
+    player1Name.length > 80 ||
+    player2Name.length > 80 ||
+    matchLabel.length > 80
+  ) {
+    return res.status(400).json({
+      error: "Player names and match label must be 80 characters or fewer",
+    });
+  }
+
+  store.dispatch({
+    type: "OFFLINE_MATCH_DETAILS_UPDATED",
+    matchId: match.id,
+    player1Name,
+    player2Name,
+    matchLabel,
+  });
+
+  return res.json(store.getState()[match.id]);
 });
 
 app.post("/assign", async (req, res) => {
@@ -335,6 +460,35 @@ app.post("/updateScoreLocal", (req, res) => {
   return res.json(store.getState()[matchId]);
 });
 
+app.post("/resetScore", (req, res) => {
+  const { matchId } = req.body;
+
+  if (!matchId) {
+    return res.status(400).json({ error: "matchId is required" });
+  }
+
+  const match = store.getState()[matchId];
+
+  if (!match) {
+    return res.status(404).json({ error: "Match not found" });
+  }
+
+  if (match.status === "complete") {
+    return res.status(409).json({
+      error: `Cannot reset score from status: ${match.status}`,
+    });
+  }
+
+  store.dispatch({
+    type: "SCORE_UPDATED",
+    matchId,
+    score1: 0,
+    score2: 0,
+  });
+
+  return res.json(store.getState()[matchId]);
+});
+
 app.post("/saveResult", async (req, res) => {
   const { matchId } = req.body;
 
@@ -434,8 +588,15 @@ app.post("/refresh", async (req, res) => {
   }
 });
 
+if (isProd) {
+  // Exclude API, socket, scoreboard, draft-overlay, assets paths from catch-all
+  app.get(/^(?!\/socket\.io|\/api|\/scoreboard|\/draft-overlay|\/assets|\/streamdeck|\/draft).*/, (_req, res) => {
+    res.sendFile(path.join(webDistPath, "index.html"));
+  });
+}
+
 bootstrap().then(() => {
-  server.listen(3001, () => {
+  server.listen(3001, '0.0.0.0', () => {
     log("Server running on http://localhost:3001");
   });
 });

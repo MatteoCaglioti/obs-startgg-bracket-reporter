@@ -4,7 +4,9 @@ React/TypeScript/Vite frontend for the OBS Start.gg Bracket Reporter.
 
 This package provides the bracket manager UI — the control surface used by tournament staff to assign matches to streams, track scores, run character drafts, and submit results to start.gg.
 
-In development it runs on `http://localhost:5173`. In production it is bundled into the Electron app and served by the Express backend.
+In development it runs on `http://localhost:5173`. In production it is bundled into the Electron app and served by the Express backend on `http://localhost:3001`.
+
+The main controller is at `/`; the character draft controller is at `/draft`.
 
 ## Development
 

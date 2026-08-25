@@ -106,17 +106,11 @@ export function createDraftRouter(io: Server) {
     return res.json(draftStore.getState());
   });
 
-  // POST /draft/restart — back to rps phase, keeping team names; reloads ruleset from disk
+  // POST /draft/restart — reset to team name entry
   router.post("/restart", (_req, res) => {
-    try {
-      const ruleset = loadRuleset();
-      draftStore.restart(ruleset);
-    } catch {
-      draftStore.restart(); // fall back to existing ruleset if file unreadable
-    }
+    draftStore.restart();
     return res.json(draftStore.getState());
   });
 
   return router;
 }
-

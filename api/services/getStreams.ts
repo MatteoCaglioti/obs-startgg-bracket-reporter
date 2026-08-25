@@ -1,10 +1,11 @@
 import { gql } from "graphql-request";
 import { startggClient } from "./startgg";
 import type { TournamentStream } from "../core/types";
+import { getTournamentVariables } from "./tournamentIdentifier";
 
 const GET_TOURNAMENT_STREAMS = gql`
-  query GetTournamentStreams($slug: String!) {
-    tournament(slug: $slug) {
+  query GetTournamentStreams($id: ID, $slug: String) {
+    tournament(id: $id, slug: $slug) {
       id
       streams {
         id
@@ -24,11 +25,12 @@ function normalizeStreamName(name: string) {
 }
 
 export async function getTournamentStreams(
-  slug: string,
+  identifier: string,
 ): Promise<TournamentStream[]> {
-  const data: any = await startggClient.request(GET_TOURNAMENT_STREAMS, {
-    slug,
-  });
+  const data: any = await startggClient.request(
+    GET_TOURNAMENT_STREAMS,
+    getTournamentVariables(identifier),
+  );
 
   const streams = data.tournament?.streams ?? [];
 

@@ -2,10 +2,22 @@ import { Match } from "./types";
 import { Event } from "./events";
 
 export function reducer(state: Record<string, Match>, event: Event) {
+  if (event.type === "OFFLINE_MATCH_CONFIGURED") {
+    return {
+      [event.match.id]: event.match,
+    };
+  }
+
   const match = state[event.matchId];
   if (!match) return state;
 
   switch (event.type) {
+    case "OFFLINE_MATCH_DETAILS_UPDATED":
+      match.player1.name = event.player1Name;
+      match.player2.name = event.player2Name;
+      match.round = event.matchLabel;
+      break;
+
     case "MATCH_ASSIGNED":
       if (match.status === "complete") return state;
       if (match.streamId && match.streamId !== event.streamId) return state; // already on a different stream
@@ -45,7 +57,7 @@ export function reducer(state: Record<string, Match>, event: Event) {
       break;
 
     case "MATCH_COMPLETED":
-      if (match.status !== "saved") return state;
+      if (match.status !== "live" && match.status !== "saved") return state;
       match.status = "complete";
       match.streamId = null;
       break;

@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "main": "electron/main.js",
   "scripts": {
-    "dev:api": "cd api &&  npm run start",
+    "dev": "concurrently --kill-others-on-fail --names api,web --prefix-colors cyan,magenta \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "cd api && npm run dev",
     "dev:web": "cd web && npm run dev",
+    "dev:electron": "electron .",
     "install:all": "npm ci && cd api && npm ci && cd ../web && npm ci",
     "build:web": "cd web && npm run build",
     "build:api": "cd api && npm run build",
@@ -42,6 +44,7 @@
     ]
   },
   "devDependencies": {
+    "concurrently": "^10.0.4",
     "electron": "^36.9.5",
     "electron-builder": "^26.8.1"
   }

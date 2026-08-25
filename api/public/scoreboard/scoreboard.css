@@ -16,6 +16,7 @@
   --panel-height: 60px;
   --panel-width:  240px;
   --score-width:  68px;
+  --player-block-offset: 56px;
 }
 
 /* =============================================================================
@@ -53,7 +54,7 @@ body {
 #matchPill {
   background: linear-gradient(to right, #8b2a75, #d00a69);
   border-radius: 10px;
-  width: 178px;
+  width: 194px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -86,8 +87,17 @@ body {
   filter: drop-shadow(0 4px 14px rgba(0,0,0,0.65));
 }
 
-#p1-block { left: var(--p1-left); top: var(--p1-top); }
-#p2-block { right: var(--p2-right); top: var(--p2-top); }
+#p1-block {
+  left: var(--p1-left);
+  top: var(--p1-top);
+  transform: translateX(calc(-1 * var(--player-block-offset)));
+}
+
+#p2-block {
+  right: var(--p2-right);
+  top: var(--p2-top);
+  transform: translateX(var(--player-block-offset));
+}
 
 /* ── Name panels ─────────────────────────────────────────────────────────── */
 
@@ -96,7 +106,7 @@ body {
   height: var(--panel-height);
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
   /* Extra inner padding compensates for the clipped corner */
 }
 
@@ -106,8 +116,8 @@ body {
   background: linear-gradient(to left, #527aa0, #4f4c83);
   border-radius: 0 0 0 4px;
   border-top-left-radius: 24px 24px;
-  padding-left: 18px;
-  padding-right: 18px;
+  padding-left: 8px;
+  padding-right: 8px;
 }
 
 /* P2: rounded rect, outer corners rounded */
@@ -116,8 +126,8 @@ body {
   background: linear-gradient(to right, #527aa0, #4f4c83);
   border-radius: 0 0 4px 0;
   border-top-right-radius: 24px 24px;
-  padding-right: 18px;
-  padding-left: 18px;
+  padding-right: 8px;
+  padding-left: 8px;
 }
 
 /* ── Player name ─────────────────────────────────────────────────────────── */
@@ -188,5 +198,3 @@ body {
   0%   { opacity: 0.25; }
   100% { opacity: 1; }
 }
-
-

@@ -24,6 +24,7 @@
 
   let currentMatch = null;
   let swapped = false;
+  let displayVisible = true;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -111,8 +112,8 @@
       matchPill.classList.add("empty");
     }
 
-    updateVisibility(true);
     currentMatch = match;
+    updateVisibility(displayVisible);
   }
 
   // ── Socket.io ─────────────────────────────────────────────────────────────
@@ -134,7 +135,8 @@
 
     const wasSwapped = swapped;
     swapped = state.swapped ?? false;
-    updateVisibility(state.visible ?? true);
+    displayVisible = state.visible ?? true;
+    updateVisibility(displayVisible && Boolean(currentMatch));
 
     // Re-render if swap changed
     if (wasSwapped !== swapped && currentMatch) {

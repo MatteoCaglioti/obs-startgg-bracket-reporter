@@ -124,22 +124,18 @@ socket.on('draft:update', (state) => {
   nameA.textContent = team1Name;
   nameB.textContent = team2Name;
 
-  // leftIsA: left panel shows teamA picks/bans (rpsWinner=1 means team1 won and is teamA)
-  const leftIsA = !state.rpsWinner || state.rpsWinner === 1;
-
   // Confirmed chars per panel
-  const confirmedPicksLeft  = (leftIsA ? state.teamAPicks : state.teamBPicks).map(find).filter(Boolean);
-  const confirmedBansLeft   = (leftIsA ? state.teamABans  : state.teamBBans ).map(find).filter(Boolean);
-  const confirmedPicksRight = (leftIsA ? state.teamBPicks : state.teamAPicks).map(find).filter(Boolean);
-  const confirmedBansRight  = (leftIsA ? state.teamBBans  : state.teamABans ).map(find).filter(Boolean);
+  const confirmedPicksLeft  = state.teamAPicks.map(find).filter(Boolean);
+  const confirmedBansLeft   = state.teamABans.map(find).filter(Boolean);
+  const confirmedPicksRight = state.teamBPicks.map(find).filter(Boolean);
+  const confirmedBansRight  = state.teamBBans.map(find).filter(Boolean);
 
   // Pending chars from staging state
   let pendingPicksLeft = [], pendingBansLeft = [], pendingPicksRight = [], pendingBansRight = [];
   if (state.staging) {
     const { codenames, action } = state.staging;
     const pendingChars  = codenames.map(find).filter(Boolean);
-    const actingIsA     = state.currentTeam === 0;
-    const actingIsLeft  = leftIsA ? actingIsA : !actingIsA;
+    const actingIsLeft  = state.currentTeam === 0;
     if (action === 'pick') {
       if (actingIsLeft) pendingPicksLeft  = pendingChars;
       else              pendingPicksRight = pendingChars;
@@ -161,7 +157,7 @@ socket.on('draft:update', (state) => {
   phaseBadge.textContent = phaseLabels[state.phase] || state.phase.toUpperCase();
 
   if (state.phase === 'ban' || state.phase === 'pick') {
-    const actingIsLeft = leftIsA ? (state.currentTeam === 0) : (state.currentTeam !== 0);
+    const actingIsLeft = state.currentTeam === 0;
     turnIndicator.textContent = `${actingIsLeft ? team1Name : team2Name}'s turn`;
   } else {
     turnIndicator.textContent = '';
