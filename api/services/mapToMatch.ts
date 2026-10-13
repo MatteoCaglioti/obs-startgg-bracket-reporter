@@ -3,7 +3,7 @@ import { Match } from "../core/types";
 export function mapSetToMatch(set: any): Match | null {
   const p1 = set.slots?.[0]?.entrant;
   const p2 = set.slots?.[1]?.entrant;
-  const streamId = set.stream?.id ? String(set.stream.id) : null;
+  const startggStreamId = set.stream?.id ? String(set.stream.id) : null;
 
   if (
     !p1?.id ||
@@ -31,18 +31,16 @@ export function mapSetToMatch(set: any): Match | null {
     score1: set.slots?.[0]?.standing?.stats?.score?.value ?? 0,
     score2: set.slots?.[1]?.standing?.stats?.score?.value ?? 0,
 
-    streamId: streamId,
-    status: mapStartGGStateToStatus(set.state, streamId),
+    streamId: null,
+    startggStreamId,
+    status: mapStartGGStateToStatus(set.state),
     updatedAt: Date.now(),
   };
 }
 
-function mapStartGGStateToStatus(
-  state: number,
-  streamId: string | null,
-): Match["status"] {
+function mapStartGGStateToStatus(state: number): Match["status"] {
   if (state === 2) return "live";
   if (state === 3) return "complete";
 
-  return streamId ? "assigned" : "idle";
+  return "idle";
 }

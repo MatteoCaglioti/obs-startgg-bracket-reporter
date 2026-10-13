@@ -9,6 +9,7 @@ export type Match = {
   score2: number;
 
   streamId: string | null;
+  startggStreamId: string | null;
   status: "idle" | "assigned" | "live" | "saved" | "complete";
 };
 

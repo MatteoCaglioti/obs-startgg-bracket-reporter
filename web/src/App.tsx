@@ -18,6 +18,10 @@ import type { Match, TournamentStream } from "./types";
 
 type AppMode = "startgg" | "offline";
 type SetupView = "choice" | AppMode;
+type ScoreboardDisplay = Record<
+  string,
+  { visible: boolean; swapped: boolean }
+>;
 
 function getStatusLabel(status: Match["status"]) {
   const labels: Record<Match["status"], string> = {
@@ -45,11 +49,41 @@ export default function App() {
   const [savingConfig, setSavingConfig] = useState(false);
   const [activeStreamId, setActiveStreamId] = useState("");
   const [isBusy, setIsBusy] = useState(false);
+  const [scoreboardDisplay, setScoreboardDisplay] =
+    useState<ScoreboardDisplay>({});
 
-  const currentMatch = activeStreamId
-    ? Object.values(matches).find((match) => match.streamId === activeStreamId) ??
-      null
+  const currentMatch =
+    mode === "offline"
+      ? matches["offline-match"] ?? null
+      : activeStreamId
+        ? Object.values(matches).find(
+            (match) => match.streamId === activeStreamId,
+          ) ?? null
+        : null;
+
+  const displaySettings =
+    scoreboardDisplay[activeStreamId] ?? scoreboardDisplay.default;
+  const playersSwapped = displaySettings?.swapped ?? false;
+  const displayedPlayer1 = currentMatch
+    ? playersSwapped
+      ? currentMatch.player2
+      : currentMatch.player1
     : null;
+  const displayedPlayer2 = currentMatch
+    ? playersSwapped
+      ? currentMatch.player1
+      : currentMatch.player2
+    : null;
+  const displayedScore1 = currentMatch
+    ? playersSwapped
+      ? currentMatch.score2
+      : currentMatch.score1
+    : 0;
+  const displayedScore2 = currentMatch
+    ? playersSwapped
+      ? currentMatch.score1
+      : currentMatch.score2
+    : 0;
 
   const availableMatches = Object.values(matches).filter(
     (match) =>
@@ -168,12 +202,21 @@ export default function App() {
         matchLabelInput,
       );
       const nextStreams = result.streamsData as TournamentStream[];
+      const offlineMatch = result.matchesData?.["offline-match"] as
+        | Match
+        | undefined;
+
+      if (!offlineMatch) {
+        throw new Error("Offline match was not returned by the server");
+      }
 
       setMatches(result.matchesData);
       setStreams(nextStreams);
       setActiveStreamId(nextStreams[0]?.id ?? "");
+      setPlayer1Input(offlineMatch.player1.name);
+      setPlayer2Input(offlineMatch.player2.name);
       setMatchLabelInput(
-        result.matchesData["offline-match"]?.round ?? "Offline Match",
+        offlineMatch.round ?? "Offline Match",
       );
       setMode("offline");
     } catch (error) {
@@ -200,6 +243,16 @@ export default function App() {
       console.error("Failed to update score:", error);
       alert("Failed to update the score.");
     }
+  };
+
+  const handleDisplayedScoreUpdate = async (
+    score1: number,
+    score2: number,
+  ) => {
+    await handleScoreUpdate(
+      playersSwapped ? score2 : score1,
+      playersSwapped ? score1 : score2,
+    );
   };
 
   const handleUpdateOfflineMatch = async () => {
@@ -252,6 +305,9 @@ export default function App() {
 
     socket.on("match:update", (updatedMatches: Record<string, Match>) => {
       setMatches(updatedMatches);
+    });
+    socket.on("scoreboard:display", (display: ScoreboardDisplay) => {
+      setScoreboardDisplay(display);
     });
 
     return () => {
@@ -476,7 +532,7 @@ export default function App() {
               <div className="panel-header">
                 <div>
                   <p className="eyebrow">Match queue</p>
-                  <h2>Available Matches</h2>
+                  <h2>Choose Scoreboard Match</h2>
                 </div>
               </div>
 
@@ -498,7 +554,7 @@ export default function App() {
               <div className="queue-list">
                 {availableMatches.length === 0 &&
                   emptyStreamControlMatchComponent(
-                    "No matches available",
+                    "No other matches available",
                     "Refresh start.gg or wait for both entrants to be known.",
                   )}
 
@@ -520,12 +576,7 @@ export default function App() {
 
                     <button
                       className="button"
-                      disabled={
-                        !activeStreamId ||
-                        currentMatch?.status === "assigned" ||
-                        currentMatch?.status === "live" ||
-                        currentMatch?.status === "saved"
-                      }
+                      disabled={!activeStreamId}
                       onClick={async () => {
                         setIsBusy(true);
 
@@ -534,10 +585,30 @@ export default function App() {
                             match.id,
                             activeStreamId,
                           );
-                          setMatches((previousMatches) => ({
-                            ...previousMatches,
-                            [updatedMatch.id]: updatedMatch,
-                          }));
+                          setMatches((previousMatches) => {
+                            const nextMatches = { ...previousMatches };
+
+                            for (const previousMatch of Object.values(
+                              nextMatches,
+                            )) {
+                              if (
+                                previousMatch.id !== updatedMatch.id &&
+                                previousMatch.streamId === activeStreamId
+                              ) {
+                                nextMatches[previousMatch.id] = {
+                                  ...previousMatch,
+                                  streamId: null,
+                                  status:
+                                    previousMatch.status === "assigned"
+                                      ? "idle"
+                                      : previousMatch.status,
+                                };
+                              }
+                            }
+
+                            nextMatches[updatedMatch.id] = updatedMatch;
+                            return nextMatches;
+                          });
                         } catch (error) {
                           console.error("Error assigning stream match:", error);
                           alert("Failed to assign the stream match.");
@@ -546,7 +617,7 @@ export default function App() {
                         }
                       }}
                     >
-                      Assign
+                      Show on Stream
                     </button>
                   </article>
                 ))}
@@ -569,8 +640,12 @@ export default function App() {
                 <input
                   id="active-player-one"
                   type="text"
-                  value={player1Input}
-                  onChange={(event) => setPlayer1Input(event.target.value)}
+                  value={playersSwapped ? player2Input : player1Input}
+                  onChange={(event) =>
+                    playersSwapped
+                      ? setPlayer2Input(event.target.value)
+                      : setPlayer1Input(event.target.value)
+                  }
                   maxLength={80}
                 />
 
@@ -580,8 +655,12 @@ export default function App() {
                 <input
                   id="active-player-two"
                   type="text"
-                  value={player2Input}
-                  onChange={(event) => setPlayer2Input(event.target.value)}
+                  value={playersSwapped ? player1Input : player2Input}
+                  onChange={(event) =>
+                    playersSwapped
+                      ? setPlayer1Input(event.target.value)
+                      : setPlayer2Input(event.target.value)
+                  }
                   maxLength={80}
                 />
 
@@ -627,7 +706,7 @@ export default function App() {
                 disabled={!currentMatch}
                 onClick={unassignStreamMatch}
               >
-                Unassign Stream
+                Clear Scoreboard
               </button>
             )}
           </div>
@@ -647,28 +726,28 @@ export default function App() {
                 <div className="players-grid">
                   <div
                     className={`player-score ${
-                      currentMatch.score1 > currentMatch.score2
+                      displayedScore1 > displayedScore2
                         ? "is-leading"
                         : ""
                     }`}
                   >
-                    <span>{currentMatch.player1?.name ?? "TBD"}</span>
-                    <strong>{currentMatch.score1}</strong>
+                    <span>{displayedPlayer1?.name ?? "TBD"}</span>
+                    <strong>{displayedScore1}</strong>
 
                     <div className="score-stepper">
                       <button
                         className="stepper-button"
                         disabled={
                           currentMatch.status === "assigned" ||
-                          currentMatch.score1 <= 0
+                          displayedScore1 <= 0
                         }
                         onClick={() =>
-                          handleScoreUpdate(
-                            currentMatch.score1 - 1,
-                            currentMatch.score2,
+                          handleDisplayedScoreUpdate(
+                            displayedScore1 - 1,
+                            displayedScore2,
                           )
                         }
-                        aria-label={`Decrease ${currentMatch.player1?.name ?? "TBD"} score`}
+                        aria-label={`Decrease ${displayedPlayer1?.name ?? "TBD"} score`}
                       >
                         -
                       </button>
@@ -677,12 +756,12 @@ export default function App() {
                         className="stepper-button primary"
                         disabled={currentMatch.status === "assigned"}
                         onClick={() =>
-                          handleScoreUpdate(
-                            currentMatch.score1 + 1,
-                            currentMatch.score2,
+                          handleDisplayedScoreUpdate(
+                            displayedScore1 + 1,
+                            displayedScore2,
                           )
                         }
-                        aria-label={`Increase ${currentMatch.player1?.name ?? "TBD"} score`}
+                        aria-label={`Increase ${displayedPlayer1?.name ?? "TBD"} score`}
                       >
                         +
                       </button>
@@ -693,28 +772,28 @@ export default function App() {
 
                   <div
                     className={`player-score ${
-                      currentMatch.score2 > currentMatch.score1
+                      displayedScore2 > displayedScore1
                         ? "is-leading"
                         : ""
                     }`}
                   >
-                    <span>{currentMatch.player2?.name ?? "TBD"}</span>
-                    <strong>{currentMatch.score2}</strong>
+                    <span>{displayedPlayer2?.name ?? "TBD"}</span>
+                    <strong>{displayedScore2}</strong>
 
                     <div className="score-stepper">
                       <button
                         className="stepper-button"
                         disabled={
                           currentMatch.status === "assigned" ||
-                          currentMatch.score2 <= 0
+                          displayedScore2 <= 0
                         }
                         onClick={() =>
-                          handleScoreUpdate(
-                            currentMatch.score1,
-                            currentMatch.score2 - 1,
+                          handleDisplayedScoreUpdate(
+                            displayedScore1,
+                            displayedScore2 - 1,
                           )
                         }
-                        aria-label={`Decrease ${currentMatch.player2?.name ?? "TBD"} score`}
+                        aria-label={`Decrease ${displayedPlayer2?.name ?? "TBD"} score`}
                       >
                         -
                       </button>
@@ -723,12 +802,12 @@ export default function App() {
                         className="stepper-button primary"
                         disabled={currentMatch.status === "assigned"}
                         onClick={() =>
-                          handleScoreUpdate(
-                            currentMatch.score1,
-                            currentMatch.score2 + 1,
+                          handleDisplayedScoreUpdate(
+                            displayedScore1,
+                            displayedScore2 + 1,
                           )
                         }
-                        aria-label={`Increase ${currentMatch.player2?.name ?? "TBD"} score`}
+                        aria-label={`Increase ${displayedPlayer2?.name ?? "TBD"} score`}
                       >
                         +
                       </button>

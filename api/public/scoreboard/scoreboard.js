@@ -35,12 +35,45 @@
     el.classList.add("flash");
   }
 
+  function fitPlayerName(el) {
+    const baseFontSize = 28;
+    el.style.fontSize = `${baseFontSize}px`;
+    el.style.letterSpacing = "0px";
+
+    if (
+      !el.textContent ||
+      el.clientWidth <= 0 ||
+      el.scrollWidth <= el.clientWidth
+    ) return;
+
+    const fittedSize = Math.max(
+      8,
+      Math.floor(baseFontSize * (el.clientWidth / el.scrollWidth))
+    );
+    el.style.fontSize = `${fittedSize}px`;
+
+    if (el.scrollWidth > el.clientWidth && el.textContent.length > 1) {
+      const overflow = el.scrollWidth - el.clientWidth;
+      el.style.letterSpacing =
+        `${Math.max(-2, -overflow / (el.textContent.length - 1))}px`;
+    }
+  }
+
+  function fitAllPlayerNames() {
+    fitPlayerName(p1Name);
+    fitPlayerName(p2Name);
+  }
+
   function setTextFade(el, newText) {
-    if (el.textContent === newText) return;
+    if (el.textContent === newText) {
+      fitPlayerName(el);
+      return;
+    }
     el.classList.add("changing");
     setTimeout(() => {
       el.textContent = newText;
       el.classList.remove("changing");
+      requestAnimationFrame(() => fitPlayerName(el));
     }, 200);
   }
 
@@ -62,13 +95,10 @@
         (m) => m.streamId === TARGET_STREAM_ID && m.status !== "complete"
       ) || null;
     }
-    // No stream specified — prefer live, then saved, then assigned
-    return (
-      matches.find((m) => m.status === "live") ||
-      matches.find((m) => m.status === "saved") ||
-      matches.find((m) => m.status === "assigned" && m.streamId) ||
-      null
-    );
+    // No stream specified — use only the match explicitly selected in the app.
+    return matches.find(
+      (m) => Boolean(m.streamId) && m.status !== "complete"
+    ) || null;
   }
 
   function renderMatch(match) {
@@ -147,6 +177,11 @@
   socket.on("disconnect", () => {
     console.warn("[scoreboard] disconnected — will reconnect automatically");
   });
+
+  window.addEventListener("resize", fitAllPlayerNames);
+  if (document.fonts?.ready) {
+    document.fonts.ready.then(fitAllPlayerNames);
+  }
 
   // Show initially as hidden until first data arrives
   root.classList.add("hidden");

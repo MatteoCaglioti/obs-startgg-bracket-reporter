@@ -20,7 +20,19 @@ export function reducer(state: Record<string, Match>, event: Event) {
 
     case "MATCH_ASSIGNED":
       if (match.status === "complete") return state;
-      if (match.streamId && match.streamId !== event.streamId) return state; // already on a different stream
+
+      for (const otherMatch of Object.values(state)) {
+        if (
+          otherMatch.id !== match.id &&
+          otherMatch.streamId === event.streamId
+        ) {
+          otherMatch.streamId = null;
+          if (otherMatch.status === "assigned") {
+            otherMatch.status = "idle";
+          }
+          otherMatch.updatedAt = Date.now();
+        }
+      }
 
       match.streamId = event.streamId;
       if (match.status === "idle") match.status = "assigned";

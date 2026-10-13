@@ -12,7 +12,6 @@ import {
 } from "./services/config";
 import { isMatchNotNull } from "./core/types";
 import { assignStreamToSet } from "./services/assignStream";
-import { unassignStreamFromSet } from "./services/unassignStream";
 import { startSetOnStartGG } from "./services/startMatch";
 import { getSets } from "./services/getSets";
 import { saveScoresToStartGG } from "./services/saveResult";
@@ -245,6 +244,7 @@ app.post("/offline", (req, res) => {
     score1: 0,
     score2: 0,
     streamId: OFFLINE_STREAM.id,
+    startggStreamId: null,
     status: "live",
     updatedAt: Date.now(),
   };
@@ -302,7 +302,7 @@ app.post("/offline/update", (req, res) => {
   return res.json(store.getState()[match.id]);
 });
 
-app.post("/assign", async (req, res) => {
+app.post("/assign", (req, res) => {
   const { matchId, streamId } = req.body;
 
   if (!matchId || !streamId) {
@@ -327,38 +327,28 @@ app.post("/assign", async (req, res) => {
     });
   }
 
-  log(match.status);
-
   if (match.status === "complete") {
     return res.status(409).json({
       error: `Match cannot be assigned from status: ${match.status}`,
     });
   }
 
-  try {
-    // 1. Push assignment to start.gg first
-    await assignStreamToSet(matchId, streamId);
+  store.dispatch({
+    type: "MATCH_ASSIGNED",
+    matchId,
+    streamId,
+  });
 
-    // 2. If start.gg succeeds, update local state
-    store.dispatch({
-      type: "MATCH_ASSIGNED",
-      matchId,
-      streamId,
-    });
-
-    const updatedMatch = store.getState()[matchId];
-
-    return res.json(updatedMatch);
-  } catch (err) {
-    log(`Failed to assign stream on start.gg: ${err}`);
-
-    return res.status(502).json({
-      error: "Failed to assign stream on start.gg",
+  if (match.startggStreamId !== streamId) {
+    void assignStreamToSet(matchId, streamId).catch((err) => {
+      log(`Failed to sync stream assignment to start.gg: ${err}`);
     });
   }
+
+  return res.json(store.getState()[matchId]);
 });
 
-app.post("/unassign", async (req, res) => {
+app.post("/unassign", (req, res) => {
   const { matchId } = req.body;
 
   if (!matchId) {
@@ -371,28 +361,15 @@ app.post("/unassign", async (req, res) => {
     return res.status(404).json({ error: "Match not found" });
   }
 
-  try {
-    await unassignStreamFromSet(matchId);
+  store.dispatch({
+    type: "MATCH_UNASSIGNED",
+    matchId,
+  });
 
-    store.dispatch({
-      type: "MATCH_UNASSIGNED",
-      matchId,
-    });
-
-    const updatedMatch = store.getState()[matchId];
-
-    return res.json(updatedMatch);
-  } catch (err: any) {
-    log(`Failed to unassign stream on start.gg:" ${err.response ?? err}`);
-
-    return res.status(502).json({
-      error: "Failed to unassign stream on start.gg",
-      details: err.response?.errors ?? err.message,
-    });
-  }
+  return res.json(store.getState()[matchId]);
 });
 
-app.post("/start", async (req, res) => {
+app.post("/start", (req, res) => {
   const { matchId } = req.body;
   if (!matchId) {
     return res.status(400).json({ error: "matchId is required" });
@@ -410,25 +387,16 @@ app.post("/start", async (req, res) => {
     });
   }
 
-  try {
-    await startSetOnStartGG(matchId);
+  store.dispatch({
+    type: "MATCH_STARTED",
+    matchId,
+  });
 
-    store.dispatch({
-      type: "MATCH_STARTED",
-      matchId,
-    });
+  void startSetOnStartGG(matchId).catch((err: any) => {
+    log(`Failed to sync in-progress state to start.gg: ${err.response ?? err}`);
+  });
 
-    const updatedMatch = store.getState()[matchId];
-
-    return res.json(updatedMatch);
-  } catch (err: any) {
-    log(`Failed to start match on start.gg: ${err.response ?? err}`);
-
-    return res.status(502).json({
-      error: "Failed to start match on start.gg",
-      details: err.response?.errors ?? err.message,
-    });
-  }
+  return res.json(store.getState()[matchId]);
 });
 
 app.post("/updateScoreLocal", (req, res) => {

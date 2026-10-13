@@ -4,6 +4,9 @@ import { draftStore } from "../core/draftStore";
 import type { DraftRuleset } from "../core/draftTypes";
 import { reducer } from "../core/reducer";
 import type { Match } from "../core/types";
+import { store } from "../core/store";
+import { adjustDisplayedScore } from "../routes/streamdeck";
+import { mapSetToMatch } from "../services/mapToMatch";
 
 const ruleset: DraftRuleset = {
   name: "Test",
@@ -49,6 +52,7 @@ test("successful final submission can complete a live match", () => {
     score1: 3,
     score2: 1,
     streamId: "stream-1",
+    startggStreamId: "stream-1",
     status: "live",
     updatedAt: 0,
   };
@@ -60,4 +64,109 @@ test("successful final submission can complete a live match", () => {
 
   assert.equal(result[match.id].status, "complete");
   assert.equal(result[match.id].streamId, null);
+});
+
+test("display-side score controls follow swapped players", () => {
+  const scores = { score1: 2, score2: 1 };
+
+  assert.deepEqual(adjustDisplayedScore(scores, 1, 1, false), {
+    score1: 3,
+    score2: 1,
+  });
+  assert.deepEqual(adjustDisplayedScore(scores, 1, 1, true), {
+    score1: 2,
+    score2: 2,
+  });
+  assert.deepEqual(adjustDisplayedScore(scores, 2, -1, true), {
+    score1: 1,
+    score2: 1,
+  });
+  assert.deepEqual(adjustDisplayedScore({ score1: 0, score2: 0 }, 2, -1, false), {
+    score1: 0,
+    score2: 0,
+  });
+});
+
+test("selecting a scoreboard match replaces the previous local selection", () => {
+  const firstMatch: Match = {
+    id: "set-1",
+    round: "Round 1",
+    player1: { id: "1", name: "Player 1" },
+    player2: { id: "2", name: "Player 2" },
+    score1: 0,
+    score2: 0,
+    streamId: "stream-1",
+    startggStreamId: "stream-1",
+    status: "assigned",
+    updatedAt: 0,
+  };
+  const secondMatch: Match = {
+    ...firstMatch,
+    id: "set-2",
+    streamId: null,
+    startggStreamId: null,
+    status: "idle",
+  };
+
+  const result = reducer(
+    { [firstMatch.id]: firstMatch, [secondMatch.id]: secondMatch },
+    { type: "MATCH_ASSIGNED", matchId: secondMatch.id, streamId: "stream-1" },
+  );
+
+  assert.equal(result[firstMatch.id].streamId, null);
+  assert.equal(result[firstMatch.id].status, "idle");
+  assert.equal(result[secondMatch.id].streamId, "stream-1");
+  assert.equal(result[secondMatch.id].status, "assigned");
+});
+
+test("start.gg stream metadata does not select a scoreboard match", () => {
+  const match = mapSetToMatch({
+    id: "set-1",
+    fullRoundText: "Winners Round 1",
+    state: 1,
+    stream: { id: "stream-1" },
+    slots: [
+      { entrant: { id: "1", name: "Player 1" } },
+      { entrant: { id: "2", name: "Player 2" } },
+    ],
+  });
+
+  assert.ok(match);
+  assert.equal(match.streamId, null);
+  assert.equal(match.startggStreamId, "stream-1");
+  assert.equal(match.status, "idle");
+});
+
+test("start.gg refresh preserves the local scoreboard selection", () => {
+  const localMatch: Match = {
+    id: "set-1",
+    round: "Round 1",
+    player1: { id: "1", name: "Player 1" },
+    player2: { id: "2", name: "Player 2" },
+    score1: 1,
+    score2: 0,
+    streamId: "local-stream",
+    startggStreamId: null,
+    status: "live",
+    updatedAt: 10,
+  };
+  const refreshedMatch: Match = {
+    ...localMatch,
+    score1: 0,
+    streamId: null,
+    startggStreamId: "startgg-stream",
+    status: "idle",
+    updatedAt: 20,
+  };
+
+  store.setInitialState([localMatch]);
+  store.mergeFromStartGG([refreshedMatch]);
+
+  const result = store.getState()[localMatch.id];
+  assert.equal(result.streamId, "local-stream");
+  assert.equal(result.startggStreamId, "startgg-stream");
+  assert.equal(result.status, "live");
+  assert.equal(result.score1, 1);
+
+  store.setInitialState([]);
 });

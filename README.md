@@ -114,9 +114,9 @@ All endpoints are on `http://localhost:3001`.
 | `POST` | `/refresh` | — | Pull latest sets from start.gg (preserves local scores) |
 | `POST` | `/offline` | `{ player1Name, player2Name, matchLabel? }` | Create/reset the active offline scoreboard match |
 | `POST` | `/offline/update` | `{ player1Name, player2Name, matchLabel }` | Update offline names and label without resetting scores |
-| `POST` | `/assign` | `{ matchId, streamId }` | Assign a match to a stream |
-| `POST` | `/unassign` | `{ matchId }` | Remove a match from a stream |
-| `POST` | `/start` | `{ matchId }` | Mark a match as live on start.gg |
+| `POST` | `/assign` | `{ matchId, streamId }` | Select a match for the local scoreboard and asynchronously sync its stream to start.gg |
+| `POST` | `/unassign` | `{ matchId }` | Clear a match from the local scoreboard without changing its start.gg stream assignment |
+| `POST` | `/start` | `{ matchId }` | Mark a match live locally and asynchronously sync its in-progress state to start.gg |
 | `POST` | `/updateScoreLocal` | `{ matchId, score1, score2 }` | Update scores in backend only |
 | `POST` | `/resetScore` | `{ matchId }` | Reset both match scores to zero |
 | `POST` | `/saveResult` | `{ matchId }` | Push current scores to start.gg |
@@ -131,16 +131,16 @@ All endpoints are on `http://localhost:3001`.
 
 ### Stream Deck Endpoints
 
-All Stream Deck endpoints accept **GET or POST**. Pass `streamId` as a query param or JSON body field to target a specific stream; omit it to target the first live/assigned match.
+All Stream Deck endpoints accept **GET or POST**. Pass `streamId` as a query param or JSON body field to target a specific stream; omit it to target the match explicitly selected for the local scoreboard.
 
 | Path | Description |
 |---|---|
-| `/streamdeck/p1/score/up` | Increment P1 score |
-| `/streamdeck/p1/score/down` | Decrement P1 score |
-| `/streamdeck/p2/score/up` | Increment P2 score |
-| `/streamdeck/p2/score/down` | Decrement P2 score |
+| `/streamdeck/p1/score/up` | Increment the player shown on the P1/left side |
+| `/streamdeck/p1/score/down` | Decrement the player shown on the P1/left side |
+| `/streamdeck/p2/score/up` | Increment the player shown on the P2/right side |
+| `/streamdeck/p2/score/down` | Decrement the player shown on the P2/right side |
 | `/streamdeck/score/reset` | Reset both scores to zero |
-| `/streamdeck/swap` | Toggle player side swap on scoreboard |
+| `/streamdeck/swap` | Swap player sides and their P1/P2 score control assignments |
 | `/streamdeck/scoreboard/show` | Show scoreboard overlay |
 | `/streamdeck/scoreboard/hide` | Hide scoreboard overlay |
 | `/streamdeck/display` | Get current display state |
@@ -188,7 +188,7 @@ idle → assigned → live → saved → complete
 - **saved** — result recorded locally, not yet submitted to start.gg
 - **complete** — final result submitted; cannot be modified
 
-The backend preserves local scores and status across start.gg refreshes. start.gg is only updated when you explicitly call `/saveResult` or `/submitFinal`.
+The backend preserves the locally selected scoreboard match, scores, and status across start.gg refreshes. A set's stream assignment or in-progress state on start.gg never selects it for the local scoreboard.
 
 ---
 

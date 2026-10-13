@@ -15,7 +15,10 @@ export interface Match {
   score1: number;
   score2: number;
 
+  /** Stream selected locally for this app's scoreboard. */
   streamId: string | null;
+  /** Stream assignment currently reported by start.gg. */
+  startggStreamId: string | null;
   status: "idle" | "assigned" | "live" | "saved" | "complete";
 
   updatedAt: number;

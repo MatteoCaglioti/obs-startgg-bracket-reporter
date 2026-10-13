@@ -14,7 +14,7 @@
 
   /* ── Panel dimensions ──────────────────────────────────────────────────── */
   --panel-height: 60px;
-  --panel-width:  240px;
+  --panel-width:  300px;
   --score-width:  68px;
   --player-block-offset: 56px;
 }
@@ -141,7 +141,7 @@ body {
   line-height: 1;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
+  letter-spacing: 0;
   transition: opacity 0.2s ease;
 }
 
