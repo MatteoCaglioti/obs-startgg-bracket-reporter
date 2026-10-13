@@ -11,7 +11,8 @@
     "build:web": "cd web && npm run build",
     "build:api": "cd api && npm run build",
     "build": "npm run build:web && npm run build:api",
-    "dist": "npm run install:all && npm run build && electron-builder --win --x64 --publish never"
+    "dist": "npm run install:all && npm run build && electron-builder --win --x64 --publish never",
+    "dist:portable": "npm run install:all && npm run build && electron-builder --win portable --x64 --publish never"
   },
   "build": {
     "appId": "com.obsstartgg.bracketreporter",

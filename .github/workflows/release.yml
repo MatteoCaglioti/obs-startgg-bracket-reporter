@@ -1,4 +1,4 @@
-name: Build Electron Release
+name: Build Portable Windows Release
 
 on:
   push:
@@ -16,19 +16,32 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            api/package-lock.json
+            web/package-lock.json
 
-      - name: Build Electron installer
-        run: npm run dist
+      - name: Set package version from tag
+        shell: pwsh
+        run: |
+          $version = $env:GITHUB_REF_NAME -replace '^v', ''
+          npm version $version --no-git-tag-version
+
+      - name: Build portable Windows executable
+        run: npm run dist:portable
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            release/*.exe
-            release/*.blockmap
-            release/latest.yml
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: release/*.exe

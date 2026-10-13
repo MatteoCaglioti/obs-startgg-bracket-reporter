@@ -67,16 +67,19 @@ npm run dev:electron
 npm run build
 ```
 
-### Package (Windows installer)
+### Package (portable Windows executable)
 
 ```bash
-npm run dist
+npm run dist:portable
 ```
 
-Outputs an NSIS installer to `release/`.
+Outputs a standalone portable executable to `release/`.
 
 If Windows blocks `electron-builder` while extracting symbolic links, enable
 Windows Developer Mode or run the build from an elevated terminal.
+
+Pushing a version tag such as `v1.2.0` runs the GitHub Actions release workflow,
+builds the portable executable, and attaches it to a GitHub release.
 
 ---
 
